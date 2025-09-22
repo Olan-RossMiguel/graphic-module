@@ -7,6 +7,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Group extends Model
 {
+    use HasFactory;
+
+       protected $fillable = [
+        'nombre'
+    ];
+
+    public function students()
+    {
+        return $this->hasMany(User::class, 'group_id')->where('tipo', 'estudiante');
+    }
+
     public function tutorGroups()
 {
     return $this->hasMany(TutorGroup::class);

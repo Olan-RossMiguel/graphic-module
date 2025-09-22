@@ -34,6 +34,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+
+             'routes' => [
+                'profile.edit'            => route('profile.edit'),
+                'tests.assistance.show'   => route('tests.assistance.show'),
+                'tests.assistance.submit' => route('tests.assistance.submit'),
+                'student.tests'           => route('student.tests'),
+            ],
         ];
     }
 }

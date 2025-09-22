@@ -1,13 +1,9 @@
 import StudentLayout from '@/Layouts/UI/StudentLayout';
-import { Head, useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
+import { useEffect } from 'react';
 import { FaEdit } from 'react-icons/fa';
 
-export default function Edit({
-    user,
-    fields = {},
-    role = 'estudiante',
-    status,
-}) {
+export default function EditStudent({ user, fields = {}, status }) {
     const { props } = usePage();
 
     const form = useForm({
@@ -24,94 +20,161 @@ export default function Edit({
         foto_perfil: null,
     });
 
-    function sanitize(data) {
-        const clean = { ...data };
-        Object.keys(clean).forEach((k) => {
-            if (
-                clean[k] === '' ||
-                clean[k] === null ||
-                clean[k] === undefined
-            ) {
-                delete clean[k];
-            }
-        });
-        return clean;
-    }
+    // Debug: mostrar datos iniciales
+    useEffect(() => {
+        console.log('Initial fields received:', fields);
+        console.log('Initial user data:', user);
+        console.log('Props:', props);
+    }, []);
+
+    // Debug: mostrar datos del formulario cuando cambien
+    useEffect(() => {
+        console.log('Form data:', form.data);
+    }, [form.data]);
 
     function handleSubmit(e) {
         e.preventDefault();
 
-        const data = sanitize(form.data);
+        console.log('Submitting form with data:', form.data);
 
-        if (data.foto_perfil instanceof File) {
-            const formData = new FormData();
-            Object.keys(data).forEach((key) => {
-                if (key !== 'foto_perfil') formData.append(key, data[key]);
-            });
-            formData.append('foto_perfil', data.foto_perfil);
+        // Validar datos antes de enviar
+        if (!form.data.numero_control.trim()) {
+            console.error('Número de control es requerido');
+            return;
+        }
+        if (!form.data.nombre.trim()) {
+            console.error('Nombre es requerido');
+            return;
+        }
+        if (!form.data.apellido_paterno.trim()) {
+            console.error('Apellido paterno es requerido');
+            return;
+        }
+        if (!form.data.apellido_materno.trim()) {
+            console.error('Apellido materno es requerido');
+            return;
+        }
+        if (!form.data.email.trim()) {
+            console.error('Email es requerido');
+            return;
+        }
+        if (!form.data.semestre) {
+            console.error('Semestre es requerido');
+            return;
+        }
+        if (!form.data.group_id) {
+            console.error('Grupo es requerido');
+            return;
+        }
 
-            form.patch(route('profile.update'), {
-                data: formData,
+        const hasFile = form.data.foto_perfil instanceof File;
+
+        console.log('Has file:', hasFile);
+        console.log('Data being sent:', form.data);
+
+        if (hasFile) {
+            // Cuando hay archivo, usar POST con method spoofing
+            form.post(route('profile.student.update'), {
+                data: {
+                    ...form.data,
+                    _method: 'PATCH',
+                },
                 forceFormData: true,
                 preserveScroll: true,
-                onSuccess: () =>
-                    form.reset(
-                        'password',
-                        'password_confirmation',
-                        'foto_perfil',
-                    ),
+                onSuccess: (page) => {
+                    console.log('Success response:', page);
+
+                    // Resetear campos sensibles
+                    form.reset('password', 'password_confirmation');
+
+                    // Resetear la foto después del envío exitoso
+                    form.setData('foto_perfil', null);
+                },
+                onError: (errors) => {
+                    console.error('Validation errors:', errors);
+                    Object.keys(errors).forEach((field) => {
+                        console.error(`Error in ${field}:`, errors[field]);
+                    });
+                },
+                onBefore: () => {
+                    console.log('About to submit form with file');
+                    console.log('Current form data before submit:', form.data);
+                },
             });
         } else {
-            // Deja que Inertia mande form.data, o si prefieres explícito:
-            form.patch(route('profile.update'), {
-                data, // ← manda la versión saneada
+            // Cuando no hay archivo, usar PATCH directamente
+            form.patch(route('profile.student.update'), {
                 preserveScroll: true,
-                onSuccess: () =>
-                    form.reset(
-                        'password',
-                        'password_confirmation',
-                        'foto_perfil',
-                    ),
+                onSuccess: (page) => {
+                    console.log('Success response:', page);
+
+                    // Solo resetear campos sensibles
+                    form.reset('password', 'password_confirmation');
+                },
+                onError: (errors) => {
+                    console.error('Validation errors:', errors);
+                    Object.keys(errors).forEach((field) => {
+                        console.error(`Error in ${field}:`, errors[field]);
+                    });
+                },
+                onBefore: () => {
+                    console.log('About to submit form without file');
+                    console.log('Current form data before submit:', form.data);
+                },
             });
         }
     }
+
     function handleFotoChange(e) {
         const file = e.target.files[0];
         if (!file) return;
-
-        // Solo actualizar el estado de la foto, no enviar aún
+        console.log('File selected:', file);
         form.setData('foto_perfil', file);
+    }
 
-        // Mostrar preview
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const img = document.getElementById('foto-preview');
-            if (img) img.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
+    // Función para manejar cambios en semestre con conversión correcta
+    function handleSemestreChange(e) {
+        const value = e.target.value;
+        console.log('Semestre changed to:', value, typeof value);
+        form.setData('semestre', value === '' ? '' : parseInt(value, 10));
+    }
+
+    // Función para manejar cambios en group_id con conversión correcta
+    function handleGroupChange(e) {
+        const value = e.target.value;
+        console.log('Group changed to:', value, typeof value);
+        form.setData('group_id', value === '' ? '' : parseInt(value, 10));
     }
 
     const TutorNombre = fields.tutor_asignado
         ? `${fields.tutor_asignado.nombre ?? ''} ${fields.tutor_asignado.apellido_paterno ?? ''}`.trim()
         : 'Ninguno por el momento';
 
-    const grupoNombre = fields.grupo?.nombre || '—';
+    const grupos = props?.grupos || [];
+    const grupoNombre = form.data.group_id
+        ? grupos.find((g) => g.id === parseInt(form.data.group_id))?.nombre ||
+          '—'
+        : '—';
 
     return (
         <StudentLayout user={user}>
-            <Head title="Perfil" />
-
             {status && (
                 <div className="mb-4 rounded bg-green-100 p-3 text-green-700">
                     {status}
                 </div>
             )}
 
+            {/* Mostrar errores generales */}
+            {form.errors.general && (
+                <div className="mb-4 rounded bg-red-100 p-3 text-red-700">
+                    {form.errors.general}
+                </div>
+            )}
+
             <div className="grid gap-6 md:grid-cols-3">
-                {/* LADO IZQUIERDO: Avatar + resumen */}
+                {/* LADO IZQUIERDO */}
                 <aside className="bg-gradient-to-b from-white to-gray-50 p-6 shadow-lg sm:rounded-xl md:col-span-1">
                     <div className="flex flex-col items-center">
-                        {/* Avatar */}
                         <div className="relative mb-5">
                             <img
                                 id="foto-preview"
@@ -120,8 +183,7 @@ export default function Edit({
                                         ? URL.createObjectURL(
                                               form.data.foto_perfil,
                                           )
-                                        : fields.foto_perfil ||
-                                          '/images/default-avatar.png'
+                                        : `${fields.foto_perfil || '/images/default-avatar.png'}?t=${Date.now()}`
                                 }
                                 alt="Foto de perfil"
                                 className="h-40 w-40 rounded-full border-4 border-gray-200 object-cover shadow-md transition-transform duration-300 hover:scale-105"
@@ -137,7 +199,6 @@ export default function Edit({
                             </label>
                         </div>
 
-                        {/* Información actual */}
                         <div className="mt-8 w-full space-y-4">
                             <div className="rounded-lg bg-gray-100 p-3 shadow-inner">
                                 <p className="text-center text-sm font-medium text-gray-500">
@@ -171,9 +232,8 @@ export default function Edit({
                     </div>
                 </aside>
 
-                {/* LADO DERECHO: Tarjetas */}
+                {/* LADO DERECHO */}
                 <section className="space-y-6 md:col-span-2">
-                    {/* Tarjeta: Datos Generales */}
                     <div className="bg-white shadow sm:rounded-lg">
                         <div className="flex items-center gap-3 border-b">
                             <div className="h-8 w-6 bg-gray-300 shadow-inner" />
@@ -183,7 +243,7 @@ export default function Edit({
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-6 p-6">
-                            {/* Fila 1: Matricula */}
+                            {/* Matrícula */}
                             <div className="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -199,6 +259,7 @@ export default function Edit({
                                             )
                                         }
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
                                     />
                                     {form.errors.numero_control && (
                                         <p className="mt-1 text-sm text-red-500">
@@ -208,7 +269,7 @@ export default function Edit({
                                 </div>
                             </div>
 
-                            {/* Fila 2: Nombre y apellidos */}
+                            {/* Nombre y apellidos */}
                             <div className="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -224,6 +285,7 @@ export default function Edit({
                                             )
                                         }
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
                                     />
                                     {form.errors.nombre && (
                                         <p className="mt-1 text-sm text-red-500">
@@ -245,6 +307,7 @@ export default function Edit({
                                             )
                                         }
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
                                     />
                                     {form.errors.apellido_paterno && (
                                         <p className="mt-1 text-sm text-red-500">
@@ -266,6 +329,7 @@ export default function Edit({
                                             )
                                         }
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
                                     />
                                     {form.errors.apellido_materno && (
                                         <p className="mt-1 text-sm text-red-500">
@@ -275,7 +339,7 @@ export default function Edit({
                                 </div>
                             </div>
 
-                            {/* Fila 3: Semestre / Grupo */}
+                            {/* Semestre / Grupo */}
                             <div className="grid gap-4 md:grid-cols-3">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -283,21 +347,17 @@ export default function Edit({
                                     </label>
                                     <select
                                         value={form.data.semestre}
-                                        onChange={(e) =>
-                                            form.setData(
-                                                'semestre',
-                                                e.target.value,
-                                            )
-                                        }
+                                        onChange={handleSemestreChange}
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
                                     >
                                         <option value="">
                                             Seleccionar semestre
                                         </option>
-                                        {[
-                                            1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-                                            12,
-                                        ].map((s) => (
+                                        {Array.from(
+                                            { length: 12 },
+                                            (_, i) => i + 1,
+                                        ).map((s) => (
                                             <option key={s} value={s}>
                                                 {s}°
                                             </option>
@@ -310,65 +370,34 @@ export default function Edit({
                                     )}
                                 </div>
 
-                                {/* Grupo como select si props.grupos existe; si no, input de texto */}
-                                {Array.isArray(props?.grupos) &&
-                                props.grupos.length > 0 ? (
-                                    <div className="md:col-span-2">
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                                            Grupo *
-                                        </label>
-                                        <select
-                                            value={form.data.group_id}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'group_id',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        >
-                                            <option value="">
-                                                Seleccionar grupo
+                                <div className="md:col-span-2">
+                                    <label className="mb-1 block text-sm font-medium text-gray-700">
+                                        Grupo *
+                                    </label>
+                                    <select
+                                        value={form.data.group_id}
+                                        onChange={handleGroupChange}
+                                        className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
+                                    >
+                                        <option value="">
+                                            Seleccionar grupo
+                                        </option>
+                                        {grupos.map((g) => (
+                                            <option key={g.id} value={g.id}>
+                                                {g.nombre}
                                             </option>
-                                            {(props?.grupos ?? []).map((g) => (
-                                                <option key={g.id} value={g.id}>
-                                                    {g.nombre}
-                                                </option>
-                                            ))}
-                                        </select>
-                                        {form.errors.group_id && (
-                                            <p className="mt-1 text-sm text-red-500">
-                                                {form.errors.group_id}
-                                            </p>
-                                        )}
-                                    </div>
-                                ) : (
-                                    <div className="md:col-span-2">
-                                        <label className="mb-1 block text-sm font-medium text-gray-700">
-                                            Grupo *
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={form.data.grupo_nombre}
-                                            onChange={(e) =>
-                                                form.setData(
-                                                    'grupo_nombre',
-                                                    e.target.value,
-                                                )
-                                            }
-                                            className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            placeholder="Ej. A"
-                                        />
-                                        {form.errors.grupo_nombre && (
-                                            <p className="mt-1 text-sm text-red-500">
-                                                {form.errors.grupo_nombre}
-                                            </p>
-                                        )}
-                                    </div>
-                                )}
+                                        ))}
+                                    </select>
+                                    {form.errors.group_id && (
+                                        <p className="mt-1 text-sm text-red-500">
+                                            {form.errors.group_id}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Fila 4: Emails */}
+                            {/* Emails */}
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -384,6 +413,7 @@ export default function Edit({
                                             )
                                         }
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        required
                                     />
                                     {form.errors.email && (
                                         <p className="mt-1 text-sm text-red-500">
@@ -393,11 +423,13 @@ export default function Edit({
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
-                                        Email Institucional *
+                                        Email Institucional
                                     </label>
                                     <input
                                         type="email"
-                                        value={form.data.email_institucional}
+                                        value={
+                                            form.data.email_institucional || ''
+                                        }
                                         onChange={(e) =>
                                             form.setData(
                                                 'email_institucional',
@@ -414,7 +446,7 @@ export default function Edit({
                                 </div>
                             </div>
 
-                            {/* Fila 5: Contraseña */}
+                            {/* Password */}
                             <div className="grid gap-4 md:grid-cols-2">
                                 <div>
                                     <label className="mb-1 block text-sm font-medium text-gray-700">
@@ -453,6 +485,11 @@ export default function Edit({
                                         }
                                         className="w-full rounded border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     />
+                                    {form.errors.password_confirmation && (
+                                        <p className="mt-1 text-sm text-red-500">
+                                            {form.errors.password_confirmation}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
@@ -464,13 +501,13 @@ export default function Edit({
                                 >
                                     {form.processing
                                         ? 'Guardando...'
-                                        : 'Guardar'}
+                                        : 'Guardar cambios'}
                                 </button>
                             </div>
                         </form>
                     </div>
 
-                    {/* Tarjeta: Datos del Tutor */}
+                    {/* Tutor asignado */}
                     <div className="bg-white shadow sm:rounded-lg">
                         <div className="flex items-center gap-3 border-b">
                             <div className="h-8 w-6 bg-gray-300 shadow-inner" />
@@ -478,7 +515,6 @@ export default function Edit({
                                 Datos del Tutor
                             </h3>
                         </div>
-
                         <div className="p-6">
                             <div className="grid items-center md:grid-cols-3">
                                 <p className="font-medium text-gray-700">
@@ -488,8 +524,6 @@ export default function Edit({
                                     {TutorNombre}
                                 </p>
                             </div>
-
-                            {/* Línea como en la maqueta */}
                             <div className="mt-4 h-px w-full bg-gray-300" />
                         </div>
                     </div>

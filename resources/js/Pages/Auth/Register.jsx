@@ -77,17 +77,19 @@ export default function Register({ groups = [], canResetPassword, status }) {
         <GuestLayout>
             <Head title="Registrarse" />
 
-            {status && <div className="mb-4 text-green-600">{status}</div>}
+            {status && (
+                <div className="mb-6 text-center text-green-600">{status}</div>
+            )}
 
-            <form onSubmit={submit} className="space-y-6">
+            <form onSubmit={submit} className="space-y-8">
                 {/* Tipo de Usuario */}
-                <div>
+                <div className="space-y-3">
                     <InputLabel htmlFor="tipo" value="Tipo de Usuario" />
                     <select
                         id="tipo"
                         name="tipo"
                         value={data.tipo}
-                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                        className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                         onChange={(e) => setData('tipo', e.target.value)}
                         required
                     >
@@ -99,21 +101,21 @@ export default function Register({ groups = [], canResetPassword, status }) {
                 </div>
 
                 {/* Campos Base (para todos) */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                    <div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    <div className="space-y-3">
                         <InputLabel htmlFor="nombre" value="Nombre" />
                         <TextInput
                             id="nombre"
                             name="nombre"
                             value={data.nombre}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) => setData('nombre', e.target.value)}
                             required
                         />
                         <InputError message={errors.nombre} className="mt-2" />
                     </div>
 
-                    <div>
+                    <div className="space-y-3">
                         <InputLabel
                             htmlFor="apellido_paterno"
                             value="Apellido Paterno"
@@ -122,7 +124,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             id="apellido_paterno"
                             name="apellido_paterno"
                             value={data.apellido_paterno}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) =>
                                 setData('apellido_paterno', e.target.value)
                             }
@@ -134,7 +136,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                         />
                     </div>
 
-                    <div>
+                    <div className="space-y-3">
                         <InputLabel
                             htmlFor="apellido_materno"
                             value="Apellido Materno"
@@ -143,7 +145,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             id="apellido_materno"
                             name="apellido_materno"
                             value={data.apellido_materno}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) =>
                                 setData('apellido_materno', e.target.value)
                             }
@@ -156,14 +158,14 @@ export default function Register({ groups = [], canResetPassword, status }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-3">
                         <InputLabel htmlFor="genero" value="Género" />
                         <select
                             id="genero"
                             name="genero"
                             value={data.genero}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             onChange={(e) => setData('genero', e.target.value)}
                             required
                         >
@@ -177,8 +179,8 @@ export default function Register({ groups = [], canResetPassword, status }) {
 
                 {/* Campos específicos para Estudiantes */}
                 {showFields.estudiante && (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                        <div className="space-y-3">
                             <InputLabel
                                 htmlFor="numero_control"
                                 value="Matrícula"
@@ -187,7 +189,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                                 id="numero_control"
                                 name="numero_control"
                                 value={data.numero_control}
-                                className="mt-1 block w-full"
+                                className="mt-2 block w-full"
                                 onChange={(e) =>
                                     setData('numero_control', e.target.value)
                                 }
@@ -199,13 +201,13 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-3">
                             <InputLabel htmlFor="semestre" value="Semestre" />
                             <select
                                 id="semestre"
                                 name="semestre"
                                 value={data.semestre}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 onChange={(e) =>
                                     setData('semestre', e.target.value)
                                 }
@@ -226,16 +228,16 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-3">
                             <InputLabel htmlFor="group_id" value="Grupo" />
                             <select
                                 id="group_id"
                                 name="group_id"
-                                value={data.group_id} // cambiar de data.grupo_id a data.group_id
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                value={data.group_id}
+                                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 onChange={(e) =>
                                     setData('group_id', Number(e.target.value))
-                                } // ya estaba correcto
+                                }
                                 required
                             >
                                 <option value="">Seleccionar</option>
@@ -246,7 +248,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                                 ))}
                             </select>
                             <InputError
-                                message={errors.group_id} // también debe ser group_id
+                                message={errors.group_id}
                                 className="mt-2"
                             />
                         </div>
@@ -255,8 +257,8 @@ export default function Register({ groups = [], canResetPassword, status }) {
 
                 {/* Campos específicos para Tutores */}
                 {showFields.tutor && (
-                    <div className="space-y-4">
-                        <div>
+                    <div className="space-y-6">
+                        <div className="space-y-3">
                             <InputLabel
                                 htmlFor="nivel_academico"
                                 value="Nivel Académico"
@@ -265,7 +267,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                                 id="nivel_academico"
                                 name="nivel_academico"
                                 value={data.nivel_academico}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 onChange={(e) =>
                                     setData('nivel_academico', e.target.value)
                                 }
@@ -287,13 +289,13 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             />
                         </div>
 
-                        <div>
+                        <div className="space-y-3">
                             <InputLabel value="Grupos a cargo" />
-                            <div className="mt-2 space-y-2">
+                            <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3">
                                 {groups.map((group) => (
                                     <label
                                         key={group.id}
-                                        className="flex items-center"
+                                        className="flex items-center space-x-2"
                                     >
                                         <input
                                             type="checkbox"
@@ -303,9 +305,9 @@ export default function Register({ groups = [], canResetPassword, status }) {
                                             onChange={() =>
                                                 handleGrupoTutorChange(group.id)
                                             }
-                                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                         />
-                                        <span className="ml-2 text-sm text-gray-700">
+                                        <span className="text-sm text-gray-700">
                                             Grupo {group.nombre}
                                         </span>
                                     </label>
@@ -321,7 +323,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
 
                 {/* Campos específicos para Psicólogas */}
                 {showFields.psicologa && (
-                    <div>
+                    <div className="space-y-3">
                         <InputLabel
                             htmlFor="nivel_academico"
                             value="Nivel Académico"
@@ -330,7 +332,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             id="nivel_academico"
                             name="nivel_academico"
                             value={data.nivel_academico}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                            className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                             onChange={(e) =>
                                 setData('nivel_academico', e.target.value)
                             }
@@ -350,22 +352,22 @@ export default function Register({ groups = [], canResetPassword, status }) {
                 )}
 
                 {/* Campos de Email */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-3">
                         <InputLabel htmlFor="email" value="Email Personal" />
                         <TextInput
                             id="email"
                             type="email"
                             name="email"
                             value={data.email}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) => setData('email', e.target.value)}
                             required
                         />
                         <InputError message={errors.email} className="mt-2" />
                     </div>
 
-                    <div>
+                    <div className="space-y-3">
                         <InputLabel
                             htmlFor="email_institucional"
                             value="Email Institucional"
@@ -375,7 +377,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             type="email"
                             name="email_institucional"
                             value={data.email_institucional}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) =>
                                 setData('email_institucional', e.target.value)
                             }
@@ -389,15 +391,15 @@ export default function Register({ groups = [], canResetPassword, status }) {
                 </div>
 
                 {/* Campos de Contraseña */}
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    <div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-3">
                         <InputLabel htmlFor="password" value="Contraseña" />
                         <TextInput
                             id="password"
                             type="password"
                             name="password"
                             value={data.password}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) =>
                                 setData('password', e.target.value)
                             }
@@ -409,7 +411,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                         />
                     </div>
 
-                    <div>
+                    <div className="space-y-3">
                         <InputLabel
                             htmlFor="password_confirmation"
                             value="Confirmar Contraseña"
@@ -419,7 +421,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             type="password"
                             name="password_confirmation"
                             value={data.password_confirmation}
-                            className="mt-1 block w-full"
+                            className="mt-2 block w-full"
                             onChange={(e) =>
                                 setData('password_confirmation', e.target.value)
                             }
@@ -432,14 +434,17 @@ export default function Register({ groups = [], canResetPassword, status }) {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-end">
+                <div className="flex flex-col items-center justify-between space-y-4 pt-4 sm:flex-row sm:space-y-0">
                     <Link
                         href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                         ¿Ya estás registrado?
                     </Link>
-                    <PrimaryButton className="ms-4" disabled={processing}>
+                    <PrimaryButton
+                        className="ms-4 bg-blue-600 px-6 py-3 hover:bg-blue-700 focus:ring-blue-500"
+                        disabled={processing}
+                    >
                         Registrarse
                     </PrimaryButton>
                 </div>

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Test;
+use App\Models\TestResult;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -97,20 +99,27 @@ class DashboardController extends Controller
      * Tests para estudiantes
      */
     public function studentTests()
-    {
-        // Verificar que el usuario sea estudiante
-        if (Auth::user()->tipo !== 'estudiante') {
-            abort(403, 'No autorizado');
-        }
+{
+    if (Auth::user()->tipo !== 'estudiante') abort(403);
 
-        $tests = [
-            ['id' => 1, 'name' => 'Estilos de aprendizaje', 'completed' => true],
-            ['id' => 2, 'name' => 'Inteligencia emocional', 'completed' => false],
-            ['id' => 3, 'name' => 'Habilidades blandas', 'completed' => false],
-        ];
+    $userId = Auth::id();
 
-        return Inertia::render('Student/Tests', ['tests' => $tests]);
-    }
+    $completedIds = TestResult::where('estudiante_id', $userId)->pluck('test_id')->all();
+
+    $tests = Test::select('id','nombre','tipo')
+        ->orderBy('id')
+        ->get()
+        ->map(function ($t) use ($completedIds) {
+            return [
+                'id'        => $t->id,
+                'name'      => $t->nombre,
+                'type'      => $t->tipo,
+                'completed' => in_array($t->id, $completedIds),
+            ];
+        });
+
+    return Inertia::render('Student/Tests', ['tests' => $tests]);
+}
 
     /**
      * Grupos para tutores

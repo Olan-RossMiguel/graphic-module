@@ -1,3 +1,4 @@
+import { Link, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     FaBook,
@@ -9,10 +10,17 @@ import {
     FaSignOutAlt,
     FaUser,
 } from 'react-icons/fa';
+import { RiMentalHealthFill } from 'react-icons/ri';
 
 const StudentSidebar = () => {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(true);
+
+    const { url } = usePage();
+
+    const isActiveProfile = url === '/profile' || url.startsWith('/profile');
+    const isActiveAssist =
+        url === '/tests/assistance' || url.startsWith('/tests/assistance');
 
     return (
         <>
@@ -53,9 +61,12 @@ const StudentSidebar = () => {
 
                 <div className="flex min-h-0 flex-1 flex-col">
                     <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-2 pt-4">
-                        <a
-                            href="#"
-                            className="flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                        <Link
+                            href="/profile"
+                            className={`flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 ${
+                                isActiveProfile ? 'bg-white/10' : ''
+                            }`}
+                            preserveScroll
                             title="Mi perfil"
                         >
                             <FaUser className="mr-3 h-5 w-5" />
@@ -64,7 +75,7 @@ const StudentSidebar = () => {
                                     Mi perfil
                                 </span>
                             )}
-                        </a>
+                        </Link>
 
                         {!collapsed && (
                             <p className="mb-1 px-4 text-xs font-semibold uppercase tracking-wider text-white/80">
@@ -72,6 +83,21 @@ const StudentSidebar = () => {
                             </p>
                         )}
                         <div className="space-y-1">
+                            <Link
+                                href="/tests/assistance"
+                                className={`flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 ${
+                                    isActiveAssist ? 'bg-white/10' : ''
+                                }`}
+                                preserveScroll
+                                title="Asistencia psicológica"
+                            >
+                                <RiMentalHealthFill className="mr-3 h-5 w-5" />
+                                {!collapsed && (
+                                    <span className="text-sm font-medium">
+                                        Asistencia psicológica
+                                    </span>
+                                )}
+                            </Link>
                             <a
                                 href="#"
                                 className="flex items-center rounded-md px-4 py-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -126,16 +152,16 @@ const StudentSidebar = () => {
 
                     {/* Logout SIEMPRE visible en desktop */}
                     <div className="sticky bottom-0 border-t border-white/15 bg-[#0a5cb8] px-2 py-3">
-                        <a
-                            href="#"
-                            className="flex items-center rounded-md px-4 py-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
+                        <button
+                            onClick={() => router.post(route('logout'))}
+                            className="flex w-full items-center rounded-md px-4 py-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                             title="Cerrar sesión"
                         >
                             <FaSignOutAlt className="mr-3 h-5 w-5" />
                             {!collapsed && (
                                 <span className="text-sm">Cerrar sesión</span>
                             )}
-                        </a>
+                        </button>
                     </div>
                 </div>
             </aside>
@@ -166,8 +192,15 @@ const StudentSidebar = () => {
                     )}
                 </button>
 
-                <a href="#" className="p-3" title="Mi perfil">
+                <a
+                    href={route('profile.edit')}
+                    className="p-3"
+                    title="Mi perfil"
+                >
                     <FaUser className="h-6 w-6" />
+                </a>
+                <a href="#" className="p-3" title="Asistencia psicológica">
+                    <RiMentalHealthFill className="h-6 w-6" />
                 </a>
                 <a href="#" className="p-3" title="Estilos de aprendizaje">
                     <FaBook className="h-6 w-6" />
@@ -181,9 +214,13 @@ const StudentSidebar = () => {
                 <a href="#" className="p-3" title="Sobre nosotros">
                     <FaInfoCircle className="h-6 w-6" />
                 </a>
-                <a href="#" className="mt-auto p-3" title="Cerrar sesión">
+                <button
+                    onClick={() => router.post(route('logout'))}
+                    className="mt-auto p-3"
+                    title="Cerrar sesión"
+                >
                     <FaSignOutAlt className="h-6 w-6" />
-                </a>
+                </button>
             </div>
         </>
     );
