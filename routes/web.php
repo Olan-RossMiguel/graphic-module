@@ -4,7 +4,11 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Tests\AssistanceTestController;
+use App\Http\Controllers\Tests\LearningStylesTestController;
+use App\Http\Controllers\Tests\EmotionalIntelligenceTestController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\Tests\SoftSkillsTestController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -39,16 +43,78 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/tests', [DashboardController::class, 'studentTests'])->name('student.tests');
     });
 
-      Route::get('/tests/assistance', [QuestionController::class, 'assistance'])
-        ->name('tests.assistance.show');
 
-    // Guardar respuestas de página (AJAX/Inertia)
-   /*  Route::post('/tests/assistance/save', [QuestionController::class, 'assistanceSave'])
-        ->name('tests.assistance.save'); */
+    // TESTS ESPECIALIZADOS (Controladores dedicados)
+    // ============================================================
 
-    // Enviar respuestas finales
-    Route::post('/tests/assistance', [QuestionController::class, 'assistanceSubmit'])
-        ->name('tests.assistance.submit');
+    /**
+     * Test de Asistencia Psicológica
+     * - 15 preguntas sin paginación
+     * - Respuestas mixtas (string y numéricas)
+     * - Cálculo ponderado por categorías
+     */
+    // DENTRO del middleware auth, agrega este grupo:
+    Route::prefix('tests')->name('tests.')->group(function () {
+
+        // Assistance Test
+        Route::controller(AssistanceTestController::class)
+            ->prefix('asistencia-psicologica')
+            ->name('assistance.')
+            ->group(function () {
+                Route::get('/', 'show')->name('show'); // ✅ tests.assistance.show
+                Route::post('/answers', 'storePageAnswers')->name('answers.store');
+                Route::post('/submit', 'submit')->name('submit');
+                Route::post('/completed', 'completed')->name('completed');
+            });
+
+        // Learning Styles Test - Manteniendo misma estructura
+        Route::controller(LearningStylesTestController::class)
+            ->prefix('estilos-aprendizaje')
+            ->name('learning-styles.')
+            ->group(function () {
+                Route::get('/', 'show')->name('show');
+                Route::post('/answers', 'storePageAnswers')->name('answers.store');
+                Route::post('/submit', 'submit')->name('submit');
+                Route::get('/completed', 'completed')->name('completed'); // ✅ GET para mostrar resultados
+            });
+        // Emotional Intelligence Test
+        Route::controller(EmotionalIntelligenceTestController::class)
+            ->prefix('inteligencia-emocional')
+            ->name('emotional-intelligence.')
+            ->group(function () {
+                Route::get('/', 'show')->name('show'); // ✅ tests.emotional-intelligence.show
+                Route::post('/answers', 'storePageAnswers')->name('answers.store');
+                Route::post('/submit', 'submit')->name('submit');
+            });
+
+        // Soft Skills Test
+        Route::controller(SoftSkillsTestController::class)
+            ->prefix('habilidades-blandas')
+            ->name('soft-skills.')
+            ->group(function () {
+                Route::get('/', 'show')->name('show');
+                Route::post('/answers', 'storePageAnswers')->name('answers.store');
+                Route::post('/submit', 'submit')->name('submit');
+            });
+
+        // Tests genéricos (QuestionController)
+        Route::controller(QuestionController::class)->group(function () {
+            Route::get('/{test}/take', 'take')->name('take'); // ✅ tests.take
+            Route::post('/{test}/answers', 'storePageAnswers')->name('answers.store');
+            Route::post('/{test}/submit', 'submit')->name('submit');
+        });
+    });
+
+    Route::controller(QuestionController::class)->group(function () {
+        // Mostrar test con paginación
+        Route::get('/{test}/take', 'take')->name('take');
+
+        // Guardar respuestas de página actual (sin finalizar)
+        Route::post('/{test}/answers', 'storePageAnswers')->name('answers.store');
+
+        // Enviar y finalizar test
+        Route::post('/{test}/submit', 'submit')->name('submit');
+    });
 
     // Rutas específicas para tutores
     Route::prefix('tutor')->group(function () {

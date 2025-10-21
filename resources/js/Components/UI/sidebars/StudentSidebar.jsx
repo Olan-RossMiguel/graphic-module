@@ -62,7 +62,7 @@ const StudentSidebar = () => {
                 <div className="flex min-h-0 flex-1 flex-col">
                     <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-2 pt-4">
                         <Link
-                            href="/profile"
+                            href={route('profile.edit')}
                             className={`flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 ${
                                 isActiveProfile ? 'bg-white/10' : ''
                             }`}
@@ -84,7 +84,7 @@ const StudentSidebar = () => {
                         )}
                         <div className="space-y-1">
                             <Link
-                                href="/tests/assistance"
+                                href={route('tests.assistance.show')}
                                 className={`flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 ${
                                     isActiveAssist ? 'bg-white/10' : ''
                                 }`}
@@ -98,8 +98,8 @@ const StudentSidebar = () => {
                                     </span>
                                 )}
                             </Link>
-                            <a
-                                href="#"
+                            <Link
+                                href={route('tests.learning-styles.show')}
                                 className="flex items-center rounded-md px-4 py-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                                 title="Estilos de aprendizaje"
                             >
@@ -109,9 +109,11 @@ const StudentSidebar = () => {
                                         Estilos de aprendizaje
                                     </span>
                                 )}
-                            </a>
-                            <a
-                                href="#"
+                            </Link>
+                            <Link
+                                href={route(
+                                    'tests.emotional-intelligence.show',
+                                )}
                                 className="flex items-center rounded-md px-4 py-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                                 title="Inteligencia emocional"
                             >
@@ -121,9 +123,9 @@ const StudentSidebar = () => {
                                         Inteligencia emocional
                                     </span>
                                 )}
-                            </a>
-                            <a
-                                href="#"
+                            </Link>
+                            <Link
+                                href={route('tests.soft-skills.show')}
                                 className="flex items-center rounded-md px-4 py-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                                 title="Habilidades blandas"
                             >
@@ -133,7 +135,7 @@ const StudentSidebar = () => {
                                         Habilidades blandas
                                     </span>
                                 )}
-                            </a>
+                            </Link>
                         </div>
 
                         <a

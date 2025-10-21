@@ -1,5 +1,6 @@
+// resources/js/Pages/Tests/SoftSkills.jsx
 import StudentLayout from '@/Layouts/UI/StudentLayout';
-import { router, useForm, usePage } from '@inertiajs/react';
+import { useForm, usePage } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
 
 function Pagination({ pagination, onPageChange }) {
@@ -33,7 +34,7 @@ function Pagination({ pagination, onPageChange }) {
             <button
                 type="button"
                 onClick={() => go(page - 1)}
-                className="rounded border px-2 py-1 text-sm hover:bg-blue-50 disabled:opacity-50"
+                className="rounded border px-2 py-1 text-sm hover:bg-blue-50"
                 disabled={!links.prev}
                 aria-label="Anterior"
             >
@@ -67,7 +68,7 @@ function Pagination({ pagination, onPageChange }) {
             <button
                 type="button"
                 onClick={() => go(page + 1)}
-                className="rounded border px-2 py-1 text-sm hover:bg-blue-50 disabled:opacity-50"
+                className="rounded border px-2 py-1 text-sm hover:bg-blue-50"
                 disabled={!links.next}
                 aria-label="Siguiente"
             >
@@ -77,7 +78,7 @@ function Pagination({ pagination, onPageChange }) {
     );
 }
 
-export default function PsychologistAssistance({
+export default function SoftSkills({
     questions = [],
     test,
     pagination,
@@ -85,74 +86,90 @@ export default function PsychologistAssistance({
     isLastPage,
 }) {
     const { props } = usePage();
-    const [localAnswers, setLocalAnswers] = useState({});
+    const [page, setPage] = useState(pagination?.current_page || 1);
 
     const form = useForm({
         answers: {},
-        page: pagination?.current_page || 1,
+        page: page,
     });
 
     const setAnswer = (qid, valor) => {
-        setLocalAnswers((prev) => ({
-            ...prev,
-            [qid]: valor,
-        }));
-
         form.setData('answers', {
             ...form.data.answers,
             [qid]: valor,
         });
     };
 
-    // Cambiar de página
-    const handlePageChange = (newPage) => {
-        // Solo guardar si hay respuestas nuevas
-        if (Object.keys(form.data.answers).length > 0) {
-            form.post(`/tests/asistencia-psicologica/answers`, {
-                preserveScroll: true,
-                preserveState: false,
-                onSuccess: () => {
-                    // Navegar a la nueva página
-                    router.visit(
-                        `/tests/asistencia-psicologica?page=${newPage}`,
-                    );
-                },
-                onError: (errors) => {
-                    console.error('Error al guardar respuestas:', errors);
-                },
-            });
-        } else {
-            // Si no hay respuestas nuevas, solo navegar
-            router.visit(`/tests/asistencia-psicologica?page=${newPage}`);
-        }
+    // Guardar respuestas de la página actual
+    const savePageAnswers = () => {
+        form.setData('page', page);
+        form.post(`/tests/habilidades-blandas/answers`, {
+            preserveScroll: true,
+            preserveState: true,
+            onSuccess: () => {
+                form.defaults('answers', {});
+                form.reset('answers');
+            },
+        });
     };
 
     // Enviar test completo
     const handleSubmit = (e) => {
         e.preventDefault();
-
-        if (Object.keys(form.data.answers).length === 0) {
-            alert('Por favor responde al menos una pregunta antes de enviar.');
-            return;
-        }
-
-        form.post(`/tests/asistencia-psicologica/submit`, {
+        form.post(`/tests/habilidades-blandas/submit`, {
             onSuccess: () => {
-                console.log('Test enviado exitosamente');
-            },
-            onError: (errors) => {
-                console.error('Error al enviar test:', errors);
+                // Limpiar localStorage después de enviar exitosamente
+                const storageKey = `test-${test.id}-answers`;
+                localStorage.removeItem(storageKey);
             },
         });
     };
 
-    // Cargar respuestas guardadas SOLO al montar
-    useEffect(() => {
-        if (savedAnswers && Object.keys(savedAnswers).length > 0) {
-            setLocalAnswers(savedAnswers);
-            form.setData('answers', savedAnswers);
+    // Cambiar de página
+    const handlePageChange = (newPage) => {
+        // Guardar respuestas antes de cambiar de página
+        if (Object.keys(form.data.answers).length > 0) {
+            form.setData('page', page);
+            form.post(`/tests/habilidades-blandas/answers`, {
+                preserveScroll: true,
+                preserveState: true,
+                onSuccess: () => {
+                    form.defaults('answers', {});
+                    form.reset('answers');
+                    // Navegar a la nueva página después de guardar
+                    window.location.href = `/tests/habilidades-blandas?page=${newPage}`;
+                },
+            });
+        } else {
+            // Navegar directamente si no hay respuestas nuevas
+            window.location.href = `/tests/habilidades-blandas?page=${newPage}`;
         }
-    }, [pagination?.current_page]); // Se recarga cuando cambia de página
+    };
+
+    useEffect(() => {
+        if (Object.keys(form.data.answers).length > 0) {
+            const storageKey = `test-${test.id}-answers`;
+            localStorage.setItem(storageKey, JSON.stringify(form.data.answers));
+        }
+    }, [form.data.answers, test.id]);
+
+    // Cargar desde localStorage al iniciar
+    useEffect(() => {
+        const storageKey = `test-${test.id}-answers`;
+        const saved = localStorage.getItem(storageKey);
+
+        if (saved) {
+            try {
+                const parsedAnswers = JSON.parse(saved);
+                form.setData('answers', parsedAnswers);
+
+                // Opcional: Mostrar mensaje de recuperación
+                console.log('Respuestas recuperadas del almacenamiento local');
+            } catch (e) {
+                console.error('Error al cargar respuestas guardadas:', e);
+            }
+        }
+    }, [test.id]);
 
     return (
         <StudentLayout user={props?.auth?.user}>
@@ -161,15 +178,21 @@ export default function PsychologistAssistance({
                 <div className="mb-5 rounded-md border border-gray-200 bg-white shadow">
                     <div className="border-b bg-gray-50 px-6 py-4">
                         <h1 className="text-3xl font-extrabold text-gray-900">
-                            {test?.nombre || 'Asistencia Psicológica'}
+                            {test?.nombre || 'Habilidades Blandas'}
                         </h1>
                     </div>
                     <div className="px-6 pb-2 pt-3 text-sm text-gray-600">
                         {test?.descripcion}
                     </div>
                     <div className="px-6 pb-4">
-                        <p className="text-sm text-blue-600">
-                            Progreso: página {pagination?.current_page || 1} de{' '}
+                        <p className="text-sm font-medium text-blue-600">
+                            Instrucciones: Responde cada afirmación según qué
+                            tan de acuerdo estás. Usa la siguiente escala: 1 =
+                            Nunca, 2 = Casi nunca, 3 = A veces, 4 = Casi
+                            siempre, 5 = Siempre
+                        </p>
+                        <p className="mt-2 text-sm text-blue-600">
+                            Progreso: página {page} de{' '}
                             {pagination?.last_page || 1}
                         </p>
                     </div>
@@ -195,7 +218,8 @@ export default function PsychologistAssistance({
                                         const inputId = `q-${q.id}-${idx}`;
                                         const value = opt?.valor;
                                         const isChecked =
-                                            localAnswers[q.id] === value;
+                                            form.data.answers[q.id] === value ||
+                                            savedAnswers[q.id] === value;
 
                                         return (
                                             <label
@@ -225,7 +249,7 @@ export default function PsychologistAssistance({
                         ))}
                     </ol>
 
-                    {/* Pie: paginación + enviar */}
+                    {/* Pie con paginación y enviar */}
                     <div className="mt-6 flex items-center justify-between">
                         <Pagination
                             pagination={pagination}
@@ -245,16 +269,10 @@ export default function PsychologistAssistance({
                         )}
                     </div>
 
-                    {/* Estado de guardado */}
+                    {/* Estado del auto-guardado */}
                     {form.recentlySuccessful && (
-                        <div className="mt-4 rounded bg-green-50 px-4 py-2 text-sm text-green-600">
-                            ✓ Respuestas guardadas correctamente
-                        </div>
-                    )}
-
-                    {form.hasErrors && (
-                        <div className="mt-4 rounded bg-red-50 px-4 py-2 text-sm text-red-600">
-                            Error al guardar. Por favor intenta de nuevo.
+                        <div className="mt-4 text-sm text-green-600">
+                            Respuestas guardadas automáticamente
                         </div>
                     )}
                 </form>
