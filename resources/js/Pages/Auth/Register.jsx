@@ -1,14 +1,22 @@
 import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
+import AcademicLevelField from '@/Components/UI/Register/AcademicLevelField';
+import BaseFields from '@/Components/UI/Register/BaseFields';
+import EmailFields from '@/Components/UI/Register/EmailFields';
+import PasswordFields from '@/Components/UI/Register/PasswordFields';
+import StudentFields from '@/Components/UI/Register/StudentFields';
 import GuestLayout from '@/Layouts/GuestLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useEffect, useState } from 'react';
+import {
+    FaArrowLeft,
+    FaArrowRight,
+    FaUserPlus,
+    FaUserTag,
+} from 'react-icons/fa';
 
 export default function Register({ groups = [], canResetPassword, status }) {
     const { data, setData, post, processing, errors, reset } = useForm({
-        // Campos base para todos
         nombre: '',
         apellido_paterno: '',
         apellido_materno: '',
@@ -17,14 +25,12 @@ export default function Register({ groups = [], canResetPassword, status }) {
         email_institucional: '',
         password: '',
         password_confirmation: '',
-
-        // Campos específicos por tipo
         tipo: 'estudiante',
         numero_control: '',
         semestre: '',
         group_id: '',
         nivel_academico: '',
-        grupos_tutor: [], // Para múltiples grupos de tutor
+        grupos_tutor: [],
     });
 
     const [showFields, setShowFields] = useState({
@@ -33,7 +39,12 @@ export default function Register({ groups = [], canResetPassword, status }) {
         psicologa: false,
     });
 
-    // Efecto para mostrar/ocultar campos según el tipo
+    const tipoOptions = [
+        { value: 'estudiante', label: 'Estudiante' },
+        { value: 'tutor', label: 'Tutor' },
+        { value: 'psicologa', label: 'Psicóloga' },
+    ];
+
     useEffect(() => {
         setShowFields({
             estudiante: data.tipo === 'estudiante',
@@ -43,29 +54,28 @@ export default function Register({ groups = [], canResetPassword, status }) {
 
         // Resetear campos específicos al cambiar tipo
         if (data.tipo !== 'estudiante') {
-            setData('numero_control', '');
-            setData('semestre', '');
-            setData('grupo_id', '');
+            setData((prev) => ({
+                ...prev,
+                numero_control: '',
+                semestre: '',
+                group_id: '',
+            }));
         }
 
         if (data.tipo !== 'tutor') {
-            setData('grupos_tutor', []);
+            setData((prev) => ({
+                ...prev,
+                grupos_tutor: [],
+            }));
         }
+
         if (data.tipo === 'estudiante') {
-            setData('nivel_academico', '');
+            setData((prev) => ({
+                ...prev,
+                nivel_academico: '',
+            }));
         }
     }, [data.tipo]);
-
-    const handleGrupoTutorChange = (grupoId) => {
-        const updatedGrupos = data.grupos_tutor.includes(grupoId)
-            ? data.grupos_tutor.filter((id) => id !== grupoId)
-            : [...data.grupos_tutor, grupoId];
-
-        setData(
-            'grupos_tutor',
-            updatedGrupos.map((id) => Number(id)),
-        );
-    };
 
     const submit = (e) => {
         e.preventDefault();
@@ -79,349 +89,136 @@ export default function Register({ groups = [], canResetPassword, status }) {
             <Head title="Registrarse" />
 
             {status && (
-                <div className="mb-6 text-center text-green-600">{status}</div>
+                <div className="mb-4 rounded bg-green-100 p-3 text-sm text-green-700">
+                    {status}
+                </div>
             )}
 
-            <form onSubmit={submit} className="space-y-8">
+            <div className="mb-8 text-center">
+                <h2 className="text-3xl font-bold text-gray-900">
+                    Crea tu cuenta
+                </h2>
+                <p className="mt-2 text-gray-600">
+                    Completa el formulario para comenzar
+                </p>
+            </div>
+
+            <form onSubmit={submit} className="space-y-6">
                 {/* Tipo de Usuario */}
-                <div className="space-y-3">
-                    <InputLabel htmlFor="tipo" value="Tipo de Usuario" />
-                    <select
-                        id="tipo"
-                        name="tipo"
-                        value={data.tipo}
-                        className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                        onChange={(e) => setData('tipo', e.target.value)}
-                        required
+                <div>
+                    <label
+                        htmlFor="tipo"
+                        className="mb-2 block text-sm font-medium text-gray-700"
                     >
-                        <option value="estudiante">Estudiante</option>
-                        <option value="tutor">Tutor</option>
-                        <option value="psicologa">Psicóloga</option>
-                    </select>
+                        Tipo de Usuario
+                    </label>
+                    <div className="relative">
+                        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                            <FaUserTag className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <select
+                            id="tipo"
+                            name="tipo"
+                            value={data.tipo}
+                            className="mt-1 block w-full rounded-md border-gray-300 py-2 pl-10 pr-3 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            onChange={(e) => setData('tipo', e.target.value)}
+                            required
+                        >
+                            {tipoOptions.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                     <InputError message={errors.tipo} className="mt-2" />
                 </div>
 
-                {/* Campos Base (para todos) */}
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                    <div className="space-y-3">
-                        <InputLabel htmlFor="nombre" value="Nombre" />
-                        <TextInput
-                            id="nombre"
-                            name="nombre"
-                            value={data.nombre}
-                            className="mt-2 block w-full"
-                            onChange={(e) => setData('nombre', e.target.value)}
-                            required
-                        />
-                        <InputError message={errors.nombre} className="mt-2" />
-                    </div>
+                {/* Campos Base */}
+                <BaseFields data={data} setData={setData} errors={errors} />
 
-                    <div className="space-y-3">
-                        <InputLabel
-                            htmlFor="apellido_paterno"
-                            value="Apellido Paterno"
-                        />
-                        <TextInput
-                            id="apellido_paterno"
-                            name="apellido_paterno"
-                            value={data.apellido_paterno}
-                            className="mt-2 block w-full"
-                            onChange={(e) =>
-                                setData('apellido_paterno', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.apellido_paterno}
-                            className="mt-2"
-                        />
-                    </div>
-
-                    <div className="space-y-3">
-                        <InputLabel
-                            htmlFor="apellido_materno"
-                            value="Apellido Materno"
-                        />
-                        <TextInput
-                            id="apellido_materno"
-                            name="apellido_materno"
-                            value={data.apellido_materno}
-                            className="mt-2 block w-full"
-                            onChange={(e) =>
-                                setData('apellido_materno', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.apellido_materno}
-                            className="mt-2"
-                        />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div className="space-y-3">
-                        <InputLabel htmlFor="genero" value="Género" />
-                        <select
-                            id="genero"
-                            name="genero"
-                            value={data.genero}
-                            className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onChange={(e) => setData('genero', e.target.value)}
-                            required
-                        >
-                            <option value="">Seleccionar</option>
-                            <option value="masculino">Masculino</option>
-                            <option value="femenino">Femenino</option>
-                        </select>
-                        <InputError message={errors.genero} className="mt-2" />
-                    </div>
-                </div>
-
-                {/* Campos específicos para Estudiantes */}
+                {/* Campos específicos por tipo */}
                 {showFields.estudiante && (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                        <div className="space-y-3">
-                            <InputLabel
-                                htmlFor="numero_control"
-                                value="Matrícula"
-                            />
-                            <TextInput
-                                id="numero_control"
-                                name="numero_control"
-                                value={data.numero_control}
-                                className="mt-2 block w-full"
-                                onChange={(e) =>
-                                    setData('numero_control', e.target.value)
-                                }
-                                required
-                            />
-                            <InputError
-                                message={errors.numero_control}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <InputLabel htmlFor="semestre" value="Semestre" />
-                            <select
-                                id="semestre"
-                                name="semestre"
-                                value={data.semestre}
-                                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onChange={(e) =>
-                                    setData('semestre', e.target.value)
-                                }
-                                required
-                            >
-                                <option value="">Seleccionar</option>
-                                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(
-                                    (sem) => (
-                                        <option key={sem} value={sem}>
-                                            {sem}°
-                                        </option>
-                                    ),
-                                )}
-                            </select>
-                            <InputError
-                                message={errors.semestre}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div className="space-y-3">
-                            <InputLabel htmlFor="group_id" value="Grupo" />
-                            <select
-                                id="group_id"
-                                name="group_id"
-                                value={data.group_id}
-                                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onChange={(e) =>
-                                    setData('group_id', Number(e.target.value))
-                                }
-                                required
-                            >
-                                <option value="">Seleccionar</option>
-                                {groups.map((group) => (
-                                    <option key={group.id} value={group.id}>
-                                        {group.nombre}
-                                    </option>
-                                ))}
-                            </select>
-                            <InputError
-                                message={errors.group_id}
-                                className="mt-2"
-                            />
-                        </div>
-                    </div>
+                    <StudentFields
+                        data={data}
+                        setData={setData}
+                        errors={errors}
+                        groups={groups}
+                    />
                 )}
 
-                {/* Campos específicos para Tutores */}
-                {showFields.tutor && (
+                {(showFields.tutor || showFields.psicologa) && (
                     <div className="space-y-6">
-                        <div className="space-y-3">
-                            <InputLabel
-                                htmlFor="nivel_academico"
-                                value="Nivel Académico"
-                            />
-                            <select
-                                id="nivel_academico"
-                                name="nivel_academico"
-                                value={data.nivel_academico}
-                                className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                                onChange={(e) =>
-                                    setData('nivel_academico', e.target.value)
-                                }
-                                required
-                            >
-                                <option value="">Seleccionar</option>
-                                <option value="licenciatura">
-                                    Licenciatura
-                                </option>
-                                <option value="especialidad">
-                                    Especialidad
-                                </option>
-                                <option value="maestria">Maestría</option>
-                                <option value="doctorado">Doctorado</option>
-                            </select>
-                            <InputError
-                                message={errors.nivel_academico}
-                                className="mt-2"
-                            />
-                        </div>
-
-                        <div className="space-y-3"></div>
-                    </div>
-                )}
-
-                {/* Campos específicos para Psicólogas */}
-                {showFields.psicologa && (
-                    <div className="space-y-3">
-                        <InputLabel
-                            htmlFor="nivel_academico"
-                            value="Nivel Académico"
-                        />
-                        <select
-                            id="nivel_academico"
-                            name="nivel_academico"
-                            value={data.nivel_academico}
-                            className="mt-2 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            onChange={(e) =>
-                                setData('nivel_academico', e.target.value)
-                            }
-                            required
-                        >
-                            <option value="">Seleccionar</option>
-                            <option value="licenciatura">Licenciatura</option>
-                            <option value="especialidad">Especialidad</option>
-                            <option value="maestria">Maestría</option>
-                            <option value="doctorado">Doctorado</option>
-                        </select>
-                        <InputError
-                            message={errors.nivel_academico}
-                            className="mt-2"
+                        <AcademicLevelField
+                            data={data}
+                            setData={setData}
+                            errors={errors}
                         />
                     </div>
                 )}
 
                 {/* Campos de Email */}
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div className="space-y-3">
-                        <InputLabel htmlFor="email" value="Email Personal" />
-                        <TextInput
-                            id="email"
-                            type="email"
-                            name="email"
-                            value={data.email}
-                            className="mt-2 block w-full"
-                            onChange={(e) => setData('email', e.target.value)}
-                            required
-                        />
-                        <InputError message={errors.email} className="mt-2" />
-                    </div>
-
-                    <div className="space-y-3">
-                        <InputLabel
-                            htmlFor="email_institucional"
-                            value="Email Institucional"
-                        />
-                        <TextInput
-                            id="email_institucional"
-                            type="email"
-                            name="email_institucional"
-                            value={data.email_institucional}
-                            className="mt-2 block w-full"
-                            onChange={(e) =>
-                                setData('email_institucional', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.email_institucional}
-                            className="mt-2"
-                        />
-                    </div>
-                </div>
+                <EmailFields data={data} setData={setData} errors={errors} />
 
                 {/* Campos de Contraseña */}
-                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    <div className="space-y-3">
-                        <InputLabel htmlFor="password" value="Contraseña" />
-                        <TextInput
-                            id="password"
-                            type="password"
-                            name="password"
-                            value={data.password}
-                            className="mt-2 block w-full"
-                            onChange={(e) =>
-                                setData('password', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.password}
-                            className="mt-2"
-                        />
-                    </div>
+                <PasswordFields data={data} setData={setData} errors={errors} />
 
-                    <div className="space-y-3">
-                        <InputLabel
-                            htmlFor="password_confirmation"
-                            value="Confirmar Contraseña"
-                        />
-                        <TextInput
-                            id="password_confirmation"
-                            type="password"
-                            name="password_confirmation"
-                            value={data.password_confirmation}
-                            className="mt-2 block w-full"
-                            onChange={(e) =>
-                                setData('password_confirmation', e.target.value)
-                            }
-                            required
-                        />
-                        <InputError
-                            message={errors.password_confirmation}
-                            className="mt-2"
-                        />
-                    </div>
-                </div>
-
-                <div className="flex flex-col items-center justify-between space-y-4 pt-4 sm:flex-row sm:space-y-0">
-                    <Link
-                        href={route('login')}
-                        className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                        ¿Ya estás registrado?
-                    </Link>
+                {/* Botón de registro */}
+                <div>
                     <PrimaryButton
-                        className="ms-4 bg-blue-600 px-6 py-3 hover:bg-blue-700 focus:ring-blue-500"
+                        className="group w-full justify-center py-3 text-base font-semibold"
                         disabled={processing}
                     >
-                        Registrarse
+                        {processing ? (
+                            'Creando cuenta...'
+                        ) : (
+                            <>
+                                <span>Crear cuenta</span>
+                                <FaArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            </>
+                        )}
                     </PrimaryButton>
                 </div>
+
+                {/* Separador */}
+                <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                        <span className="bg-white px-2 text-gray-500">
+                            ¿Ya tienes cuenta?
+                        </span>
+                    </div>
+                </div>
+
+                {/* Botón de login */}
+                <div>
+                    <Link
+                        href={route('login')}
+                        className="flex w-full items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    >
+                        <FaArrowLeft className="mr-2 h-4 w-4" />
+                        Volver al inicio de sesión
+                    </Link>
+                </div>
             </form>
+
+            {/* Información adicional */}
+            <div className="mt-8 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                <h3 className="mb-2 flex items-center text-sm font-medium text-gray-800">
+                    <FaUserPlus className="mr-2 h-4 w-4" />
+                    Información importante
+                </h3>
+                <ul className="space-y-1 text-xs text-gray-600">
+                    <li>• Usa tu email institucional para verificación</li>
+                    <li>• La contraseña debe tener al menos 8 caracteres</li>
+                    <li>• Selecciona correctamente tu tipo de usuario</li>
+                    <li>
+                        • ¿Problemas al registrarte? Contacta al soporte técnico
+                    </li>
+                </ul>
+            </div>
         </GuestLayout>
     );
 }

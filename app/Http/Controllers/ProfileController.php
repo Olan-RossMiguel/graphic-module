@@ -14,21 +14,16 @@ use Inertia\Response;
 
 class ProfileController extends Controller
 {
-    /**
-     * Renderiza la página correcta según el rol
-     */
+
     public function edit(Request $request): Response
     {
         $user = $request->user()->load('group');
 
-        // Tutor asignado (solo si estudiante y con grupo)
-        $tutorAsignado = null;
-        if ($user->tipo === 'estudiante' && $user->group) {
-            $tutorAsignado = User::whereHas('assignedGroups', function ($q) use ($user) {
-                $q->where('group_id', $user->group_id)->where('rol', 'tutor');
-            })->first();
-        }
 
+        $tutorAsignado = null;
+        if ($user->tipo === 'estudiante' && $user->group_id && $user->semestre) {
+            $tutorAsignado = $user->tutor;
+        }
         $fields = [
             'numero_control'       => $user->numero_control,
             'nombre'               => $user->nombre,
@@ -71,10 +66,7 @@ class ProfileController extends Controller
         return Inertia::render($page, $props);
     }
 
-    /**
-     * PATCH /profile/student
-     * Actualiza perfil de ESTUDIANTE usando Inertia
-     */
+
     public function updateStudent(Request $request)
     {
         $user = $request->user();
@@ -125,10 +117,7 @@ class ProfileController extends Controller
             ->with('status', 'Perfil actualizado correctamente');
     }
 
-    /**
-     * PATCH /profile/tutor
-     * Actualiza perfil de TUTOR usando Inertia
-     */
+
     public function updateTutor(Request $request)
     {
         $user = $request->user();
@@ -171,7 +160,7 @@ class ProfileController extends Controller
 
         $user->update($updateData);
 
-        // Sincroniza grupos del tutor
+
         if (array_key_exists('group_ids', $validated)) {
             $user->assignedTutorGroups()->sync($validated['group_ids'] ?? []);
         }
@@ -179,10 +168,7 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'Perfil actualizado correctamente');
     }
 
-    /**
-     * PATCH /profile/psychologist
-     * Actualiza perfil de PSICÓLOGA usando Inertia
-     */
+
     public function updatePsychologist(Request $request)
     {
         $user = $request->user();

@@ -57,7 +57,7 @@ class User extends Authenticatable
     }
 
     // ACTUALIZADA: Grupos asignados (con semestre)
-        public function assignedGroups()
+    public function assignedGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
             ->withPivot('semestre')
@@ -87,7 +87,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(TutorGroup::class)
             ->with('group')
-            ->whereHas('user', function($query) {
+            ->whereHas('user', function ($query) {
                 $query->where('tipo', 'tutor');
             });
     }
@@ -101,21 +101,36 @@ class User extends Authenticatable
     }
 
     // Helpers de rol
-    public function isEstudiante() { return $this->tipo === 'estudiante'; }
-    public function isTutor()      { return $this->tipo === 'tutor'; }
-    public function isPsicologa()  { return $this->tipo === 'psicologa'; }
-    public function isAdmin()      { return $this->tipo === 'admin'; }
+    public function isEstudiante()
+    {
+        return $this->tipo === 'estudiante';
+    }
+    public function isTutor()
+    {
+        return $this->tipo === 'tutor';
+    }
+    public function isPsicologa()
+    {
+        return $this->tipo === 'psicologa';
+    }
+    public function isAdmin()
+    {
+        return $this->tipo === 'admin';
+    }
 
     // NUEVO: Tutor asignado al estudiante (por group_id y semestre)
+    // Líneas 104-113
     public function getTutorAttribute()
     {
         if (!$this->isEstudiante() || !$this->group_id || !$this->semestre) return null;
 
-        return User::whereHas('tutorGroups', function ($q) {
-            $q->where('group_id', $this->group_id)
-              ->where('semestre', $this->semestre)
-              ->where('tipo', 'tutor');
-        })->first();
+        return User::where('tipo', 'tutor') // ← AGREGADO
+            ->whereHas('tutorGroups', function ($q) {
+                $q->where('group_id', $this->group_id)
+                    ->where('semestre', $this->semestre);
+            })
+            ->select(['id', 'nombre', 'apellido_paterno', 'apellido_materno', 'email', 'foto_perfil'])
+            ->first();
     }
 
     // NUEVO: Psicóloga asignada al grupo del estudiante
@@ -125,8 +140,8 @@ class User extends Authenticatable
 
         return User::whereHas('tutorGroups', function ($q) {
             $q->where('group_id', $this->group_id)
-              ->where('semestre', $this->semestre)
-              ->where('tipo', 'psicologa');
+                ->where('semestre', $this->semestre)
+                ->where('tipo', 'psicologa');
         })->first();
     }
 
@@ -136,14 +151,14 @@ class User extends Authenticatable
         if (!$this->isTutor()) return collect();
 
         $groupIds = $this->tutorGroups()
-            ->when($semestre, function($q) use ($semestre) {
+            ->when($semestre, function ($q) use ($semestre) {
                 $q->where('semestre', $semestre);
             })
             ->pluck('group_id');
 
         return User::whereIn('group_id', $groupIds)
             ->where('tipo', 'estudiante')
-            ->when($semestre, function($q) use ($semestre) {
+            ->when($semestre, function ($q) use ($semestre) {
                 $q->where('semestre', $semestre);
             })
             ->get();

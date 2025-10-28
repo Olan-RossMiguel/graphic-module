@@ -1,4 +1,3 @@
-// components/layouts/PsychologistLayout.jsx (si existe)
 import Navbar from '@/Components/UI/Navbar';
 import PsychologistSidebar from '@/Components/UI/sidebars/PsychologistSidebar';
 

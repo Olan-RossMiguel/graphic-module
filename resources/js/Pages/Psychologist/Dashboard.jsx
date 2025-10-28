@@ -1,5 +1,5 @@
 // resources/js/Pages/Psychologist/Dashboard.jsx
-import PsychologistLayout from '../../Layouts/PsychologistLayout';
+import PsychologistLayout from '@/Layouts/UI/PsychologistLayout';
 
 const PsychologistDashboard = ({ auth }) => {
     return (
