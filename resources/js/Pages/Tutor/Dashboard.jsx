@@ -1,5 +1,4 @@
-// resources/js/Pages/Tutor/Dashboard.jsx
-import TutorLayout from '../../Layouts/TutorLayout';
+import TutorLayout from '@/Layouts/UI/TutorLayout';
 
 const TutorDashboard = ({ auth }) => {
     return (

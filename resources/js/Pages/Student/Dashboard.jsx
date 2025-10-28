@@ -1,5 +1,4 @@
-// resources/js/Pages/Student/Dashboard.jsx
-import StudentLayout from '../../Layouts/UI/StudentLayout';
+import StudentLayout from '@/Layouts/UI/StudentLayout';
 
 const StudentDashboard = ({
     user,

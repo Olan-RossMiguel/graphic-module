@@ -38,7 +38,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',   // hashea automáticamente al asignar
+            'password'          => 'hashed',
             'semestre'          => 'integer',
             'group_id'          => 'integer',
         ];
@@ -50,65 +50,139 @@ class User extends Authenticatable
         return $this->belongsTo(Group::class);
     }
 
-    // Relación general a grupos por pivote (con rol)
-    public function assignedGroups()
+    // NUEVA: Relación directa con tutor_groups (con semestre)
+    public function tutorGroups()
+    {
+        return $this->hasMany(TutorGroup::class);
+    }
+
+    // ACTUALIZADA: Grupos asignados (con semestre)
+        public function assignedGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
-            ->withPivot('rol')
+            ->withPivot('semestre')
             ->withTimestamps();
     }
 
-    // Grupos donde el usuario actúa como TUTOR
+    // CORREGIDA: Grupos donde es tutor (con semestre)
     public function assignedTutorGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
-            ->wherePivot('rol', 'tutor')
-            ->withPivot('rol')
+            ->where('tutor_groups.user_id', $this->id) // Filtro correcto
+            ->withPivot('semestre')
             ->withTimestamps();
     }
 
-    // (Opcional) Grupos donde el usuario actúa como PSICÓLOGA
+    // CORREGIDA: Grupos donde es psicóloga (con semestre)
     public function assignedPsychologistGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
-            ->wherePivot('rol', 'psicologa')
-            ->withPivot('rol')
+            ->where('tutor_groups.user_id', $this->id) // Filtro correcto
+            ->withPivot('semestre')
             ->withTimestamps();
     }
 
-    // Helpers de rol (no tienen nada que ver con Filament)
+    // NUEVO: Método mejorado para obtener grupos del tutor
+    public function tutorGroupsWithSemestre()
+    {
+        return $this->hasMany(TutorGroup::class)
+            ->with('group')
+            ->whereHas('user', function($query) {
+                $query->where('tipo', 'tutor');
+            });
+    }
+
+    // NUEVO: Método simple para grupos del tutor actual
+    public function getMyTutorGroups()
+    {
+        return TutorGroup::where('user_id', $this->id)
+            ->with('group')
+            ->get();
+    }
+
+    // Helpers de rol
     public function isEstudiante() { return $this->tipo === 'estudiante'; }
     public function isTutor()      { return $this->tipo === 'tutor'; }
     public function isPsicologa()  { return $this->tipo === 'psicologa'; }
     public function isAdmin()      { return $this->tipo === 'admin'; }
 
-    // Tutor asignado al estudiante (por group_id)
+    // NUEVO: Tutor asignado al estudiante (por group_id y semestre)
     public function getTutorAttribute()
     {
-        if (!$this->isEstudiante() || !$this->group_id) return null;
+        if (!$this->isEstudiante() || !$this->group_id || !$this->semestre) return null;
 
-        return User::whereHas('assignedGroups', function ($q) {
-            $q->where('group_id', $this->group_id)->where('rol', 'tutor');
+        return User::whereHas('tutorGroups', function ($q) {
+            $q->where('group_id', $this->group_id)
+              ->where('semestre', $this->semestre)
+              ->where('tipo', 'tutor');
         })->first();
     }
 
-    // Estudiantes de los grupos del tutor
-    public function getEstudiantesAttribute()
+    // NUEVO: Psicóloga asignada al grupo del estudiante
+    public function getPsychologistAttribute()
+    {
+        if (!$this->isEstudiante() || !$this->group_id || !$this->semestre) return null;
+
+        return User::whereHas('tutorGroups', function ($q) {
+            $q->where('group_id', $this->group_id)
+              ->where('semestre', $this->semestre)
+              ->where('tipo', 'psicologa');
+        })->first();
+    }
+
+    // ACTUALIZADA: Estudiantes de los grupos del tutor (por semestre)
+    public function getEstudiantesBySemestre($semestre = null)
     {
         if (!$this->isTutor()) return collect();
 
-        $groupIds = $this->assignedTutorGroups()->pluck('groups.id');
+        $groupIds = $this->tutorGroups()
+            ->when($semestre, function($q) use ($semestre) {
+                $q->where('semestre', $semestre);
+            })
+            ->pluck('group_id');
+
         return User::whereIn('group_id', $groupIds)
             ->where('tipo', 'estudiante')
+            ->when($semestre, function($q) use ($semestre) {
+                $q->where('semestre', $semestre);
+            })
             ->get();
     }
 
-    // URL pública de la foto (disco 'public')
-   public function getFotoPerfilUrlAttribute()
-{
-    if (!$this->foto_perfil) return '/images/default-avatar.png';
-    return url('storage/' . $this->foto_perfil);
-}
+    // NUEVO: Todos los estudiantes para psicólogas (todos los grupos y semestres)
+    public function getAllEstudiantesForPsychologist()
+    {
+        if (!$this->isPsicologa()) return collect();
+
+        return User::where('tipo', 'estudiante')->get();
+    }
+
+    // NUEVO: Grupos por semestre para tutores
+    public function getGroupsBySemestre($semestre)
+    {
+        if (!$this->isTutor()) return collect();
+
+        return $this->tutorGroups()
+            ->with('group')
+            ->where('semestre', $semestre)
+            ->get()
+            ->pluck('group');
+    }
+
+    // NUEVO: Todos los grupos para psicólogas
+    public function getAllGroupsForPsychologist()
+    {
+        if (!$this->isPsicologa()) return collect();
+
+        return Group::with(['students', 'tutorGroups.user'])->get();
+    }
+
+    // URL pública de la foto
+    public function getFotoPerfilUrlAttribute()
+    {
+        if (!$this->foto_perfil) return '/images/default-avatar.png';
+        return url('storage/' . $this->foto_perfil);
+    }
 
     public function getNombreCompletoAttribute()
     {

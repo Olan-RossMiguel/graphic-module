@@ -1,5 +1,5 @@
 import Navbar from '@/Components/UI/Navbar';
-import StudentSidebar from '../../Components/UI/sidebars/StudentSidebar';
+import StudentSidebar from '@/Components/UI/sidebars/StudentSidebar';
 
 const StudentLayout = ({ user, children }) => {
     return (

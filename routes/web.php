@@ -8,7 +8,9 @@ use App\Http\Controllers\Tests\AssistanceTestController;
 use App\Http\Controllers\Tests\LearningStylesTestController;
 use App\Http\Controllers\Tests\EmotionalIntelligenceTestController;
 use App\Http\Controllers\QuestionController;
+use App\Http\Controllers\StudentAnswerController;
 use App\Http\Controllers\Tests\SoftSkillsTestController;
+use App\Http\Controllers\Tutor\GroupController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -30,9 +32,15 @@ Route::post('register', [RegisteredUserController::class, 'store']);
 Route::middleware(['auth'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::match(['PATCH', 'POST'], '/profile/student', [ProfileController::class, 'updateStudent'])->name('profile.student.update');
-    Route::patch('/profile/tutor', [ProfileController::class, 'updateTutor'])->name('profile.tutor.update');
+   Route::match(['PATCH', 'POST'], '/profile/tutor', [ProfileController::class, 'updateTutor'])->name('profile.tutor.update');
     Route::patch('/profile/psychologist', [ProfileController::class, 'updatePsychologist'])->name('profile.psychologist.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+
+Route::get('/groups', [GroupController::class, 'index'])->name('tutor.groups.index');
+    Route::get('/groups/{group}', [GroupController::class, 'show'])->name('tutor.groups.show');
+     Route::get('/students/{student}', [StudentAnswerController::class, 'showStudentForTutor'])
+        ->name('tutor.students.show');
 
     // Ruta principal del dashboard que redirige según el rol
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

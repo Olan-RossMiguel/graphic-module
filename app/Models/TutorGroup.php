@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TutorGroup extends Model
 {
@@ -12,45 +11,51 @@ class TutorGroup extends Model
 
     protected $fillable = [
         'group_id',
-        'user_id',
-        'rol',
+        'user_id', 
+        'semestre'
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'semestre' => 'integer'
     ];
 
-    /**
-     * Relación con el grupo
-     */
-    public function group(): BelongsTo
+    // Relación con el grupo
+    public function group()
     {
         return $this->belongsTo(Group::class);
     }
 
-    /**
-     * Relación con el usuario (tutor/psicóloga)
-     */
-    public function user(): BelongsTo
+    // Relación con el usuario (tutor o psicóloga)
+    public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Scope para tutores
-     */
+    // Scope para filtrar por semestre
+    public function scopeBySemestre($query, $semestre)
+    {
+        return $query->where('semestre', $semestre);
+    }
+
+    // Scope para filtrar por usuario
+    public function scopeByUser($query, $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    // Scope para tutores
     public function scopeTutors($query)
     {
-        return $query->where('rol', 'tutor');
+        return $query->whereHas('user', function($q) {
+            $q->where('tipo', 'tutor');
+        });
     }
 
-    /**
-     * Scope para psicólogas
-     */
+    // Scope para psicólogas
     public function scopePsychologists($query)
     {
-        return $query->where('rol', 'psicologa');
+        return $query->whereHas('user', function($q) {
+            $q->where('tipo', 'psicologa');
+        });
     }
-
 }

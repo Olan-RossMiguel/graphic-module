@@ -47,6 +47,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
             setData('semestre', '');
             setData('grupo_id', '');
         }
+
         if (data.tipo !== 'tutor') {
             setData('grupos_tutor', []);
         }
@@ -289,35 +290,7 @@ export default function Register({ groups = [], canResetPassword, status }) {
                             />
                         </div>
 
-                        <div className="space-y-3">
-                            <InputLabel value="Grupos a cargo" />
-                            <div className="mt-2 grid grid-cols-2 gap-3 md:grid-cols-3">
-                                {groups.map((group) => (
-                                    <label
-                                        key={group.id}
-                                        className="flex items-center space-x-2"
-                                    >
-                                        <input
-                                            type="checkbox"
-                                            checked={data.grupos_tutor.includes(
-                                                group.id,
-                                            )}
-                                            onChange={() =>
-                                                handleGrupoTutorChange(group.id)
-                                            }
-                                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                        />
-                                        <span className="text-sm text-gray-700">
-                                            Grupo {group.nombre}
-                                        </span>
-                                    </label>
-                                ))}
-                            </div>
-                            <InputError
-                                message={errors.grupos_tutor}
-                                className="mt-2"
-                            />
-                        </div>
+                        <div className="space-y-3"></div>
                     </div>
                 )}
 

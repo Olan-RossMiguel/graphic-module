@@ -36,6 +36,22 @@ class DashboardController extends Controller
     }
 
     /**
+     * Obtener datos del usuario para compartir
+     */
+    private function getUserData()
+    {
+        $user = Auth::user();
+        return [
+            'id' => $user->id,
+            'nombre' => $user->nombre,
+            'nombre_completo' => $user->nombre_completo,
+            'foto_perfil' => $user->foto_perfil,
+            'tipo' => $user->tipo,
+            'email' => $user->email,
+        ];
+    }
+
+    /**
      * Dashboard para estudiantes
      */
     public function studentDashboard()
@@ -45,7 +61,7 @@ class DashboardController extends Controller
         }
 
         $data = [
-            'user' => Auth::user(), // 🔹 Esto es clave
+            'user' => $this->getUserData(),
             'welcome_message' => 'Bienvenido Estudiante',
             'pending_tests' => 3,
             'completed_tests' => 5,
@@ -54,19 +70,17 @@ class DashboardController extends Controller
         return Inertia::render('Student/Dashboard', $data);
     }
 
-
     /**
      * Dashboard para tutores
      */
     public function tutorDashboard()
     {
-        // Verificar que el usuario sea tutor
         if (Auth::user()->tipo !== 'tutor') {
             abort(403, 'No autorizado');
         }
 
-        // Aquí puedes obtener datos específicos para tutores
         $data = [
+            'user' => $this->getUserData(),
             'welcome_message' => 'Bienvenido Tutor',
             'total_groups' => 4,
             'total_students' => 120,
@@ -80,13 +94,12 @@ class DashboardController extends Controller
      */
     public function psychologistDashboard()
     {
-        // Verificar que el usuario sea psicólogo
-        if (Auth::user()->tipo !== 'psychologist') {
+        if (Auth::user()->tipo !== 'psicologa') { // ← Cambié 'psychologist' a 'psicologa'
             abort(403, 'No autorizado');
         }
 
-        // Aquí puedes obtener datos específicos para psicólogos
         $data = [
+            'user' => $this->getUserData(),
             'welcome_message' => 'Bienvenida Psicóloga',
             'total_reports' => 15,
             'pending_reviews' => 8,
@@ -99,34 +112,36 @@ class DashboardController extends Controller
      * Tests para estudiantes
      */
     public function studentTests()
-{
-    if (Auth::user()->tipo !== 'estudiante') abort(403);
+    {
+        if (Auth::user()->tipo !== 'estudiante') abort(403);
 
-    $userId = Auth::id();
+        $userId = Auth::id();
 
-    $completedIds = TestResult::where('estudiante_id', $userId)->pluck('test_id')->all();
+        $completedIds = TestResult::where('estudiante_id', $userId)->pluck('test_id')->all();
 
-    $tests = Test::select('id','nombre','tipo')
-        ->orderBy('id')
-        ->get()
-        ->map(function ($t) use ($completedIds) {
-            return [
-                'id'        => $t->id,
-                'name'      => $t->nombre,
-                'type'      => $t->tipo,
-                'completed' => in_array($t->id, $completedIds),
-            ];
-        });
+        $tests = Test::select('id','nombre','tipo')
+            ->orderBy('id')
+            ->get()
+            ->map(function ($t) use ($completedIds) {
+                return [
+                    'id'        => $t->id,
+                    'name'      => $t->nombre,
+                    'type'      => $t->tipo,
+                    'completed' => in_array($t->id, $completedIds),
+                ];
+            });
 
-    return Inertia::render('Student/Tests', ['tests' => $tests]);
-}
+        return Inertia::render('Student/Tests', [
+            'user' => $this->getUserData(),
+            'tests' => $tests
+        ]);
+    }
 
     /**
      * Grupos para tutores
      */
     public function tutorGroups()
     {
-        // Verificar que el usuario sea tutor
         if (Auth::user()->tipo !== 'tutor') {
             abort(403, 'No autorizado');
         }
@@ -137,7 +152,10 @@ class DashboardController extends Controller
             ['id' => 3, 'name' => 'Grupo 3C', 'students_count' => 32],
         ];
 
-        return Inertia::render('Tutor/Groups', ['groups' => $groups]);
+        return Inertia::render('Tutor/Groups', [
+            'user' => $this->getUserData(),
+            'groups' => $groups
+        ]);
     }
 
     /**
@@ -145,8 +163,7 @@ class DashboardController extends Controller
      */
     public function psychologistReports()
     {
-        // Verificar que el usuario sea psicólogo
-        if (Auth::user()->tipo !== 'psychologist') {
+        if (Auth::user()->tipo !== 'psicologa') { // ← Cambié 'psychologist' a 'psicologa'
             abort(403, 'No autorizado');
         }
 
@@ -156,6 +173,9 @@ class DashboardController extends Controller
             ['id' => 3, 'title' => 'Estadísticas Globales', 'date' => '2023-10-05'],
         ];
 
-        return Inertia::render('Psychologist/Reports', ['reports' => $reports]);
+        return Inertia::render('Psychologist/Reports', [
+            'user' => $this->getUserData(),
+            'reports' => $reports
+        ]);
     }
 }
