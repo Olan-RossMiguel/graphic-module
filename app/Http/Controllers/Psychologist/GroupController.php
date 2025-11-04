@@ -23,6 +23,7 @@ class GroupController extends Controller
             ->selectRaw('COUNT(*) as total_estudiantes')
             ->groupBy('group_id', 'semestre')
             ->with('group:id,nombre')
+            ->orderBy('semestre', 'asc')  // Primero por semestre
             ->get()
             ->map(function($item) {
                 return [
@@ -32,10 +33,7 @@ class GroupController extends Controller
                     'total_estudiantes' => $item->total_estudiantes,
                 ];
             })
-            ->sortBy([
-                ['grupo_nombre', 'asc'],
-                ['semestre', 'asc']
-            ])
+            ->sortBy('grupo_nombre')  // Luego por nombre de grupo
             ->values();
 
         return Inertia::render('Psychologist/Groups/Index', [
