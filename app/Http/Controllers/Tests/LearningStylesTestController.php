@@ -59,7 +59,7 @@ class LearningStylesTestController extends QuestionController
             ];
         });
 
-        // ⭐ CLAVE: Obtener TODAS las respuestas guardadas (no filtrar por página)
+        // ⭐ CLAVE: Obtener TODAS las respuestas guardadas
         $allSavedAnswers = StudentAnswer::where('estudiante_id', $user->id)
             ->where('test_id', $test->id)
             ->where('sesion_id', $sessionId)
@@ -67,10 +67,11 @@ class LearningStylesTestController extends QuestionController
             ->pluck('respuesta', 'pregunta_id')
             ->toArray();
 
-        // Convertir claves a strings y valores a int (consistencia con JavaScript)
+        // 🔥 CORRECCIÓN: Convertir claves a strings, pero MANTENER valores originales
         $allSavedAnswersFormatted = [];
         foreach ($allSavedAnswers as $qid => $respuesta) {
-            $allSavedAnswersFormatted[(string)$qid] = (int)$respuesta;
+            // Solo convertir la clave a string, dejar el valor como está
+            $allSavedAnswersFormatted[(string)$qid] = (string)$respuesta;
         }
 
         // Verificar si es la última página
@@ -85,7 +86,7 @@ class LearningStylesTestController extends QuestionController
             'session_id' => $sessionId,
             'user_id' => $user->id,
             'total_saved_answers' => count($allSavedAnswersFormatted),
-            'saved_answer_question_ids' => array_keys($allSavedAnswersFormatted),
+            'saved_answers' => $allSavedAnswersFormatted, // Ver qué valores se están enviando
         ]);
 
         return Inertia::render('Tests/LearningStyles', [
@@ -135,7 +136,7 @@ class LearningStylesTestController extends QuestionController
             'user_id' => $user->id,
             'session_id' => $sessionId,
             'answers_count' => count($answers),
-            'answer_ids' => array_keys($answers),
+            'answers' => $answers, // Ver qué se está guardando
         ]);
 
         DB::transaction(function () use ($answers, $test, $user, $sessionId) {
@@ -150,12 +151,21 @@ class LearningStylesTestController extends QuestionController
 
                 if (!$belongs) continue;
 
+                // 🔥 IMPORTANTE: Guardar el valor normalizado
+                $normalizedValue = $this->normalizeAnswer($value);
+                
+                Log::info('Guardando respuesta individual', [
+                    'pregunta_id' => $questionId,
+                    'valor_original' => $value,
+                    'valor_normalizado' => $normalizedValue,
+                ]);
+
                 StudentAnswer::recordAnswer([
                     'estudiante_id' => $user->id,
                     'test_id' => $test->id,
                     'pregunta_id' => (int) $questionId,
                     'sesion_id' => $sessionId,
-                    'respuesta' => $this->normalizeAnswer($value),
+                    'respuesta' => $normalizedValue,
                     'fecha_respuesta' => $now,
                 ]);
             }
@@ -192,7 +202,7 @@ class LearningStylesTestController extends QuestionController
         DB::transaction(function () use ($answers, $test, $user, $sessionId) {
             $now = now();
 
-            // Guardar respuestas finales (incluyendo las de localStorage)
+            // Guardar respuestas finales
             foreach ($answers as $questionId => $value) {
                 if ($value === null || $value === '') continue;
 
@@ -212,7 +222,7 @@ class LearningStylesTestController extends QuestionController
                 ]);
             }
 
-            // Calcular resultado después de guardar todas las respuestas
+            // Calcular resultado
             $this->calculateResult($test, $user, $sessionId);
         });
 
@@ -308,14 +318,35 @@ class LearningStylesTestController extends QuestionController
         ];
     }
 
+    /**
+     * Normaliza la respuesta para guardarla en BD
+     * Convierte strings como 'visual' a números (1, 2, 3, 4)
+     */
     private function normalizeAnswer($raw): int
     {
+        // Si ya es un número válido, devolverlo
         if (is_numeric($raw)) {
-            return (int) $raw;
+            $intVal = (int) $raw;
+            // Verificar que esté en el rango válido (1-4)
+            if ($intVal >= 1 && $intVal <= 4) {
+                return $intVal;
+            }
         }
 
-        $key = is_string($raw) ? strtolower($raw) : $raw;
-        return self::STYLES[$key] ?? 0;
+        // Si es un string, convertirlo usando el mapeo
+        $key = is_string($raw) ? strtolower(trim($raw)) : $raw;
+        
+        if (isset(self::STYLES[$key])) {
+            return self::STYLES[$key];
+        }
+
+        // Si no se puede normalizar, registrar error
+        Log::warning('Valor de respuesta no reconocido', [
+            'raw_value' => $raw,
+            'type' => gettype($raw)
+        ]);
+
+        return 0; // Valor por defecto para respuestas inválidas
     }
 
     private function calculateResult($test, $user, $sessionId)

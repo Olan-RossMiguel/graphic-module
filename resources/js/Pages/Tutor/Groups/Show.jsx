@@ -247,19 +247,21 @@ export default function TutorGroupShow({ auth, group, semestre, estudiantes }) {
                                                         Reporte
                                                     </button>
 
-                                                    {/* Botón ver detalles */}
-                                                    <button
-                                                        onClick={() =>
-                                                            handleViewDetails(
-                                                                estudiante.id,
-                                                            )
-                                                        }
+                                                    {/* Botón ver detalles - Opción correcta con Link */}
+                                                    <Link
+                                                        href={route(
+                                                            'tutor.students.show',
+                                                            {
+                                                                student:
+                                                                    estudiante.id,
+                                                            },
+                                                        )}
                                                         className="inline-flex items-center rounded border border-gray-300 bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                                         title="Ver detalles de tests"
                                                     >
                                                         <FaEye className="mr-1 h-3 w-3" />
                                                         Detalles
-                                                    </button>
+                                                    </Link>
                                                 </div>
                                             </td>
                                         </tr>

@@ -10,11 +10,15 @@ use App\Http\Controllers\Tests\EmotionalIntelligenceTestController;
 use App\Http\Controllers\QuestionController;
 use App\Http\Controllers\StudentAnswerController;
 use App\Http\Controllers\Tests\SoftSkillsTestController;
-use App\Http\Controllers\Tutor\GroupController;
+use App\Http\Controllers\Tutor\GroupController as TutorGroupController;
+use App\Http\Controllers\Psychologist\GroupController as PsychologistGroupController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
+// ==========================================
+// RUTAS PÚBLICAS
+// ==========================================
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -24,58 +28,54 @@ Route::get('/', function () {
     ]);
 });
 
-// Rutas de autenticación (públicas)
+// Autenticación
 Route::get('register', [RegisteredUserController::class, 'create'])->name('register');
 Route::post('register', [RegisteredUserController::class, 'store']);
 
-// Grupo de rutas protegidas
+// ==========================================
+// RUTAS PROTEGIDAS (AUTH)
+// ==========================================
 Route::middleware(['auth'])->group(function () {
+    
+    // ==========================================
+    // PERFIL (Común para todos los roles)
+    // ==========================================
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::match(['PATCH', 'POST'], '/profile/student', [ProfileController::class, 'updateStudent'])->name('profile.student.update');
-   Route::match(['PATCH', 'POST'], '/profile/tutor', [ProfileController::class, 'updateTutor'])->name('profile.tutor.update');
-    Route::patch('/profile/psychologist', [ProfileController::class, 'updatePsychologist'])->name('profile.psychologist.update');
+    Route::match(['PATCH', 'POST'], '/profile/tutor', [ProfileController::class, 'updateTutor'])->name('profile.tutor.update');
+    Route::match(['PATCH', 'POST'], '/profile/psychologist', [ProfileController::class, 'updatePsychologist'])->name('profile.psychologist.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-
-Route::get('/groups', [GroupController::class, 'index'])->name('tutor.groups.index');
-    Route::get('/groups/{group}', [GroupController::class, 'show'])->name('tutor.groups.show');
-     Route::get('/students/{student}', [StudentAnswerController::class, 'showStudentForTutor'])
-        ->name('tutor.students.show');
-
-    // Ruta principal del dashboard que redirige según el rol
+    // ==========================================
+    // DASHBOARD PRINCIPAL (Redirección según rol)
+    // ==========================================
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // Rutas específicas para estudiantes
-    Route::prefix('student')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'studentDashboard'])->name('student.dashboard');
-        Route::get('/tests', [DashboardController::class, 'studentTests'])->name('student.tests');
+    // ==========================================
+    // RUTAS PARA ESTUDIANTES
+    // ==========================================
+    Route::prefix('student')->name('student.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'studentDashboard'])->name('dashboard');
+        Route::get('/tests', [DashboardController::class, 'studentTests'])->name('tests');
     });
 
-
-    // TESTS ESPECIALIZADOS (Controladores dedicados)
-    // ============================================================
-
-    /**
-     * Test de Asistencia Psicológica
-     * - 15 preguntas sin paginación
-     * - Respuestas mixtas (string y numéricas)
-     * - Cálculo ponderado por categorías
-     */
-    // DENTRO del middleware auth, agrega este grupo:
+    // ==========================================
+    // TESTS (Común para estudiantes)
+    // ==========================================
     Route::prefix('tests')->name('tests.')->group(function () {
-
-        // Assistance Test
+        
+        // Test de Asistencia Psicológica
         Route::controller(AssistanceTestController::class)
             ->prefix('asistencia-psicologica')
             ->name('assistance.')
             ->group(function () {
-                Route::get('/', 'show')->name('show'); // ✅ tests.assistance.show
+                Route::get('/', 'show')->name('show');
                 Route::post('/answers', 'storePageAnswers')->name('answers.store');
                 Route::post('/submit', 'submit')->name('submit');
                 Route::post('/completed', 'completed')->name('completed');
             });
 
-        // Learning Styles Test - Manteniendo misma estructura
+        // Test de Estilos de Aprendizaje
         Route::controller(LearningStylesTestController::class)
             ->prefix('estilos-aprendizaje')
             ->name('learning-styles.')
@@ -83,19 +83,20 @@ Route::get('/groups', [GroupController::class, 'index'])->name('tutor.groups.ind
                 Route::get('/', 'show')->name('show');
                 Route::post('/answers', 'storePageAnswers')->name('answers.store');
                 Route::post('/submit', 'submit')->name('submit');
-                Route::get('/completed', 'completed')->name('completed'); // ✅ GET para mostrar resultados
+                Route::get('/completed', 'completed')->name('completed');
             });
-        // Emotional Intelligence Test
+
+        // Test de Inteligencia Emocional
         Route::controller(EmotionalIntelligenceTestController::class)
             ->prefix('inteligencia-emocional')
             ->name('emotional-intelligence.')
             ->group(function () {
-                Route::get('/', 'show')->name('show'); // ✅ tests.emotional-intelligence.show
+                Route::get('/', 'show')->name('show');
                 Route::post('/answers', 'storePageAnswers')->name('answers.store');
                 Route::post('/submit', 'submit')->name('submit');
             });
 
-        // Soft Skills Test
+        // Test de Habilidades Blandas
         Route::controller(SoftSkillsTestController::class)
             ->prefix('habilidades-blandas')
             ->name('soft-skills.')
@@ -107,43 +108,47 @@ Route::get('/groups', [GroupController::class, 'index'])->name('tutor.groups.ind
 
         // Tests genéricos (QuestionController)
         Route::controller(QuestionController::class)->group(function () {
-            Route::get('/{test}/take', 'take')->name('take'); // ✅ tests.take
+            Route::get('/{test}/take', 'take')->name('take');
             Route::post('/{test}/answers', 'storePageAnswers')->name('answers.store');
             Route::post('/{test}/submit', 'submit')->name('submit');
         });
     });
 
-    Route::controller(QuestionController::class)->group(function () {
-        // Mostrar test con paginación
-        Route::get('/{test}/take', 'take')->name('take');
-
-        // Guardar respuestas de página actual (sin finalizar)
-        Route::post('/{test}/answers', 'storePageAnswers')->name('answers.store');
-
-        // Enviar y finalizar test
-        Route::post('/{test}/submit', 'submit')->name('submit');
+    // ==========================================
+    // RUTAS PARA TUTORES
+    // ==========================================
+    Route::prefix('tutor')->name('tutor.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'tutorDashboard'])->name('dashboard');
+        
+        // Grupos
+        Route::get('/groups', [TutorGroupController::class, 'index'])->name('groups.index');
+        Route::get('/groups/{group}', [TutorGroupController::class, 'show'])->name('groups.show');
+        
+        // Estudiantes
+        Route::get('/students/{student}', [StudentAnswerController::class, 'showStudentForTutor'])->name('students.show');
     });
 
-    // Rutas específicas para tutores
-    Route::prefix('tutor')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'tutorDashboard'])->name('tutor.dashboard');
-        Route::get('/groups', [DashboardController::class, 'tutorGroups'])->name('tutor.groups');
-    });
-
-    // Rutas específicas para psicólogos
-    Route::prefix('psychologist')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'psychologistDashboard'])->name('psychologist.dashboard');
-        Route::get('/reports', [DashboardController::class, 'psychologistReports'])->name('psychologist.reports');
+    // ==========================================
+    // RUTAS PARA PSICÓLOGOS
+    // ==========================================
+    Route::prefix('psychologist')->name('psychologist.')->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [DashboardController::class, 'psychologistDashboard'])->name('dashboard');
+        Route::get('/reports', [DashboardController::class, 'psychologistReports'])->name('reports');
+        
+        // Grupos (puede ver todos los grupos del sistema)
+        Route::get('/groups', [PsychologistGroupController::class, 'index'])->name('groups.index');
+        Route::get('/groups/{group}', [PsychologistGroupController::class, 'show'])->name('groups.show');
+        
+        // Estudiantes (puede ver cualquier estudiante)
+        Route::get('/students/{student}', [StudentAnswerController::class, 'showStudentForPsychologist'])->name('students.show');
     });
 });
 
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
-    ->name('logout');
-
-
-// ELIMINA o COMENTA esta ruta duplicada que está fuera del middleware:
-// Route::get('/dashboard', function () {
-//     return Inertia::render('Dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
+// ==========================================
+// LOGOUT
+// ==========================================
+Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
 
 require __DIR__ . '/auth.php';

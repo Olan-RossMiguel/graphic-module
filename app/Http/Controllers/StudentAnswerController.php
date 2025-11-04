@@ -12,7 +12,7 @@ class StudentAnswerController extends Controller
 {
     /**
      * Mostrar detalles de un estudiante específico con sus resultados de tests
-     * PARA TUTORES - Vista Inertia
+     * PARA TUTORES - Vista Inertia con validación de acceso
      */
     public function showStudentForTutor(Request $request, $studentId)
     {
@@ -24,7 +24,7 @@ class StudentAnswerController extends Controller
             ->with(['group'])
             ->firstOrFail();
 
-        // Verificar que el tutor tiene acceso
+        // ✅ VALIDACIÓN: Verificar que el tutor tiene acceso
         $tutorHasAccess = $tutor->tutorGroups()
             ->where('group_id', $student->group_id)
             ->where('semestre', $student->semestre)
@@ -34,8 +34,45 @@ class StudentAnswerController extends Controller
             abort(403, 'No tienes acceso a este estudiante.');
         }
 
-        // Obtener resultados de tests del estudiante
-        $testResults = TestResult::where('estudiante_id', $studentId)
+        // Obtener y formatear resultados
+        $testResults = $this->formatTestResults($studentId);
+
+        return Inertia::render('Tutor/Students/Show', [
+            'student' => $this->formatStudentData($student),
+            'testResults' => $testResults
+        ]);
+    }
+
+    /**
+     * Mostrar detalles de un estudiante específico con sus resultados de tests
+     * PARA PSICÓLOGOS - Vista Inertia SIN validación de acceso (puede ver a todos)
+     */
+    public function showStudentForPsychologist(Request $request, $studentId)
+    {
+        // Obtener el estudiante
+        $student = User::where('id', $studentId)
+            ->where('tipo', 'estudiante')
+            ->with(['group'])
+            ->firstOrFail();
+
+        // ✅ SIN VALIDACIÓN: El psicólogo puede ver cualquier estudiante
+
+        // Obtener y formatear resultados
+        $testResults = $this->formatTestResults($studentId);
+
+        return Inertia::render('Psychologist/Students/Show', [
+            'student' => $this->formatStudentData($student),
+            'testResults' => $testResults
+        ]);
+    }
+
+    /**
+     * Método privado para formatear los resultados de tests
+     * ♻️ REUTILIZABLE para tutor y psicólogo
+     */
+    private function formatTestResults($studentId)
+    {
+        return TestResult::where('estudiante_id', $studentId)
             ->with(['test'])
             ->get()
             ->map(function($result) {
@@ -73,23 +110,27 @@ class StudentAnswerController extends Controller
 
                 return $response;
             });
+    }
 
-        return Inertia::render('Tutor/Students/Show', [
-            'student' => [
-                'id' => $student->id,
-                'numero_control' => $student->numero_control,
-                'nombre' => $student->nombre,
-                'apellido_paterno' => $student->apellido_paterno,
-                'apellido_materno' => $student->apellido_materno,
-                'email' => $student->email,
-                'foto_perfil_url' => $student->foto_perfil_url,
-                'group_id' => $student->group_id,
-                'group_nombre' => $student->group->nombre,
-                'semestre' => $student->semestre,
-                'estado' => $student->estado,
-            ],
-            'testResults' => $testResults
-        ]);
+    /**
+     * Método privado para formatear datos del estudiante
+     * ♻️ REUTILIZABLE para tutor y psicólogo
+     */
+    private function formatStudentData($student)
+    {
+        return [
+            'id' => $student->id,
+            'numero_control' => $student->numero_control,
+            'nombre' => $student->nombre,
+            'apellido_paterno' => $student->apellido_paterno,
+            'apellido_materno' => $student->apellido_materno,
+            'email' => $student->email,
+            'foto_perfil_url' => $student->foto_perfil_url,
+            'group_id' => $student->group_id,
+            'group_nombre' => $student->group->nombre ?? null,
+            'semestre' => $student->semestre,
+            'estado' => $student->estado,
+        ];
     }
 
     /**
