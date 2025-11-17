@@ -57,54 +57,119 @@ class SoftSkillsTestController extends QuestionController
         return $this->take($request, $test);
     }
 
+    /**
+     * Guarda respuestas de una página
+     * POST /tests/habilidades-blandas/answers
+     */
     public function storePageAnswers(Request $request, Test $test)
-{
-    return parent::storePageAnswers($request, $test);
-}
+    {
+        return parent::storePageAnswers($request, $test);
+    }
 
     /**
      * Envía y finaliza el test
      * POST /tests/habilidades-blandas/submit
      */
-    public function submit(Request $request, Test $test)
+    public function submit(Request $request, ?Test $test = null)
+{
+    if (!$test) {
+        $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
+    }
+
+    $request->validate([
+        'answers' => 'required|array',
+        'answers.*' => 'nullable|integer|min:1|max:5',
+    ]);
+
+    $user = $request->user();
+    $sessionId = $request->session()->getId();
+    $answers = $request->input('answers', []);
+
+    DB::transaction(function () use ($answers, $test, $user, $sessionId) {
+        $now = now();
+
+        // Guardar todas las respuestas
+        foreach ($answers as $questionId => $value) {
+            $belongs = Question::where('id', $questionId)
+                ->where('test_id', $test->id)
+                ->exists();
+                
+            if (!$belongs) continue;
+
+            StudentAnswer::recordAnswer([
+                'estudiante_id' => $user->id,
+                'test_id' => $test->id,
+                'pregunta_id' => (int) $questionId,
+                'sesion_id' => $sessionId,
+                'respuesta' => (int) $value,
+                'fecha_respuesta' => $now,
+            ]);
+        }
+
+        // Calcular y guardar resultado
+        $this->calculateResult($test, $user, $sessionId);
+    });
+
+    // Redirigir a la página de resultados
+    return redirect()->route('tests.soft-skills.completed');
+}
+    /**
+     * Muestra la página de test completado con resultados
+     * GET /tests/habilidades-blandas/completed
+     */
+    public function completed(Request $request)
     {
-        $request->validate([
-            'answers' => 'required|array',
-            'answers.*' => 'nullable|integer|min:1|max:5',
-        ]);
-
+        $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
         $user = $request->user();
-        $sessionId = $request->session()->getId();
-        $answers = $request->input('answers', []);
 
-        DB::transaction(function () use ($answers, $test, $user, $sessionId) {
-            $now = now();
+        $result = TestResult::where('estudiante_id', $user->id)
+            ->where('test_id', $test->id)
+            ->orderBy('fecha_realizacion', 'desc')
+            ->first();
 
-            // Guardar todas las respuestas
-            foreach ($answers as $questionId => $value) {
-                $belongs = Question::where('id', $questionId)
-                    ->where('test_id', $test->id)
-                    ->exists();
-                    
-                if (!$belongs) continue;
+        if (!$result) {
+            return redirect()->route('student.tests')
+                ->with('error', 'No se encontró resultado del test');
+        }
 
-                StudentAnswer::recordAnswer([
-                    'estudiante_id' => $user->id,
-                    'test_id' => $test->id,
-                    'pregunta_id' => (int) $questionId,
-                    'sesion_id' => $sessionId,
-                    'respuesta' => (int) $value,
-                    'fecha_respuesta' => $now,
-                ]);
+        $chartData = [];
+        $insights = [];
+
+        // Preparar datos para la gráfica
+        if (isset($result->resultado_json['por_categoria'])) {
+            foreach ($result->resultado_json['por_categoria'] as $categoria => $puntos) {
+                $chartData[] = [
+                    'name' => $this->getCategoryName($categoria),
+                    'value' => $puntos
+                ];
             }
 
-            // Calcular y guardar resultado
-            $this->calculateResult($test, $user, $sessionId);
-        });
+            // Generar insights personalizados
+            $insights = $this->generateSoftSkillsInsights(
+                $result->resultado_json['nivel'],
+                $result->puntuacion_total,
+                $result->resultado_json['fortalezas'] ?? []
+            );
+        }
 
-        return redirect()
-            ->route('student.tests')
-            ->with('status', '¡Test de Habilidades Blandas completado!');
+        return Inertia::render('Tests/TestCompletedSoftSkills', [
+            'test' => [
+                'id' => $test->id,
+                'nombre' => $test->nombre,
+                'descripcion' => $test->descripcion,
+            ],
+            'result' => [
+                'fecha_realizacion' => $result->fecha_realizacion,
+                'puntuacion_total' => $result->puntuacion_total,
+                'nivel' => $result->resultado_json['nivel'] ?? null,
+                'descripcion' => $result->resultado_json['descripcion'] ?? null,
+                'fortalezas' => $result->resultado_json['fortalezas'] ?? [],
+                'areas_mejora' => $result->resultado_json['areas_mejora'] ?? [],
+                'recomendaciones' => $result->resultado_json['recomendaciones'] ?? [],
+            ],
+            'chartData' => $chartData,
+            'insights' => $insights,
+        ]);
     }
 
     /**
@@ -299,6 +364,39 @@ class SoftSkillsTestController extends QuestionController
         }
 
         return $result;
+    }
+
+    /**
+     * Genera insights personalizados para el test de habilidades blandas
+     * 
+     * @param string $nivel
+     * @param int $puntuacionTotal
+     * @param array $fortalezas
+     * @return array
+     */
+    private function generateSoftSkillsInsights(string $nivel, int $puntuacionTotal, array $fortalezas): array
+    {
+        $facts = [
+            'Excelente' => '🌟 ¡Felicidades! Solo el 15% de los profesionales alcanzan este nivel. Las empresas valoran a personas con habilidades blandas excepcionales hasta un 85% más que las habilidades técnicas.',
+            'Bueno' => '👍 Estás en el 30% superior. Las habilidades blandas son el factor diferenciador en el 93% de las promociones profesionales.',
+            'Medio' => '📈 Tienes potencial de crecimiento. El 75% de los empleadores considera que las habilidades blandas son tan importantes como las técnicas.',
+            'Bajo' => '🎯 Toda mejora es posible. Las habilidades blandas se pueden desarrollar con práctica y dedicación. El 80% de los profesionales mejoran significativamente con entrenamiento.',
+        ];
+
+        $recommendations = [
+            'Excelente' => 'Mantén tu excelencia y considera mentorear a otros. Tu perfil es altamente valorado en el mercado laboral.',
+            'Bueno' => 'Enfócate en las áreas de oportunidad identificadas. Con pequeñas mejoras llegarás al nivel excelente.',
+            'Medio' => 'Dedica tiempo cada semana a practicar las habilidades más débiles. Considera tomar cursos especializados.',
+            'Bajo' => 'Establece un plan de desarrollo personal. Busca feedback constante y practica conscientemente cada habilidad.',
+        ];
+
+        $scorePercentage = round(($puntuacionTotal / 50) * 100, 2);
+
+        return [
+            'curious_fact' => $facts[$nivel] ?? $facts['Medio'],
+            'recommendation' => $recommendations[$nivel] ?? $recommendations['Medio'],
+            'score_percentage' => $scorePercentage,
+        ];
     }
 
     /**

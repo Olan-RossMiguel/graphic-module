@@ -56,17 +56,6 @@ export default function TestCompleted({ test, result }) {
                         </div>
 
                         {/* Mensaje de confirmación */}
-                        <div className="mb-8 border-l-4 border-blue-500 bg-blue-50 p-4">
-                            <p className="text-sm text-blue-800">
-                                <strong>
-                                    Tus respuestas han sido guardadas
-                                    correctamente.
-                                </strong>
-                                <br />
-                                Puedes consultar tus resultados en cualquier
-                                momento desde tu panel de tests.
-                            </p>
-                        </div>
                     </div>
                 </div>
 

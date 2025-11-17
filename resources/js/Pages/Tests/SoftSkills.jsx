@@ -1,281 +1,327 @@
-// resources/js/Pages/Tests/SoftSkills.jsx
+import { ConfirmationModal } from '@/Components/UI/tests/ConfirmationModal';
+import { ErrorAlert } from '@/Components/UI/tests/ErrorAlert';
+import Pagination from '@/Components/UI/tests/Pagination';
+import { ProgressBar } from '@/Components/UI/tests/ProgressBar';
+import { QuestionCard } from '@/Components/UI/tests/QuestionCard';
+import { SuccessAlert } from '@/Components/UI/tests/SuccessAlert';
+import { ValidationAlert } from '@/Components/UI/tests/ValidationAlert';
 import StudentLayout from '@/Layouts/UI/StudentLayout';
-import { useForm, usePage } from '@inertiajs/react';
-import { useEffect, useState } from 'react';
-
-function Pagination({ pagination, onPageChange }) {
-    if (!pagination || pagination.last_page <= 1) return null;
-
-    const { current_page, last_page, links } = pagination;
-    const page = current_page;
-    const totalPages = last_page;
-
-    const go = (p) => {
-        if (p >= 1 && p <= totalPages && p !== page) {
-            onPageChange(p);
-        }
-    };
-
-    const pages = [];
-    pages.push(1);
-
-    if (page > 3) pages.push('...');
-
-    for (let p = page - 1; p <= page + 1; p++) {
-        if (p > 1 && p < totalPages) pages.push(p);
-    }
-
-    if (page < totalPages - 2) pages.push('...');
-
-    if (totalPages > 1) pages.push(totalPages);
-
-    return (
-        <div className="flex items-center gap-2">
-            <button
-                type="button"
-                onClick={() => go(page - 1)}
-                className="rounded border px-2 py-1 text-sm hover:bg-blue-50"
-                disabled={!links.prev}
-                aria-label="Anterior"
-            >
-                ‹
-            </button>
-
-            {pages.map((p, i) =>
-                p === '...' ? (
-                    <span
-                        key={`dots-${i}`}
-                        className="px-2 text-sm text-gray-500"
-                    >
-                        …
-                    </span>
-                ) : (
-                    <button
-                        key={p}
-                        type="button"
-                        onClick={() => go(p)}
-                        className={`rounded px-3 py-1 text-sm ${
-                            p === page
-                                ? 'bg-blue-600 text-white'
-                                : 'border text-blue-700 hover:bg-blue-50'
-                        }`}
-                    >
-                        {p}
-                    </button>
-                ),
-            )}
-
-            <button
-                type="button"
-                onClick={() => go(page + 1)}
-                className="rounded border px-2 py-1 text-sm hover:bg-blue-50"
-                disabled={!links.next}
-                aria-label="Siguiente"
-            >
-                ›
-            </button>
-        </div>
-    );
-}
+import { router, usePage } from '@inertiajs/react';
+import { Loader2 } from 'lucide-react';
+import { useState } from 'react';
 
 export default function SoftSkills({
     questions = [],
     test,
     pagination,
-    savedAnswers = {},
     isLastPage,
 }) {
     const { props } = usePage();
-    const [page, setPage] = useState(pagination?.current_page || 1);
 
-    const form = useForm({
-        answers: {},
-        page: page,
+    // 🎯 CLAVE DEL TEST: Genera una clave única para localStorage
+    const testStorageKey = `test_habilidades_blandas_${props?.auth?.user?.id || 'guest'}`;
+
+    // 🎯 ESTADO ÚNICO: Solo React + localStorage (sin BD hasta el final)
+    const [allAnswers, setAllAnswers] = useState(() => {
+        try {
+            const stored = localStorage.getItem(testStorageKey);
+            return stored ? JSON.parse(stored) : {};
+        } catch {
+            return {};
+        }
     });
 
+    const [showValidation, setShowValidation] = useState(false);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [modalAction, setModalAction] = useState(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // 📝 Guardar respuesta (solo en React + localStorage)
     const setAnswer = (qid, valor) => {
-        form.setData('answers', {
-            ...form.data.answers,
-            [qid]: valor,
-        });
-    };
+        const questionId = String(qid);
+        const normalizedValue = String(valor);
 
-    // Guardar respuestas de la página actual
-    const savePageAnswers = () => {
-        form.setData('page', page);
-        form.post(`/tests/habilidades-blandas/answers`, {
-            preserveScroll: true,
-            preserveState: true,
-            onSuccess: () => {
-                form.defaults('answers', {});
-                form.reset('answers');
-            },
-        });
-    };
+        setAllAnswers((prev) => {
+            const updated = { ...prev, [questionId]: normalizedValue };
 
-    // Enviar test completo
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        form.post(`/tests/habilidades-blandas/submit`, {
-            onSuccess: () => {
-                // Limpiar localStorage después de enviar exitosamente
-                const storageKey = `test-${test.id}-answers`;
-                localStorage.removeItem(storageKey);
-            },
-        });
-    };
-
-    // Cambiar de página
-    const handlePageChange = (newPage) => {
-        // Guardar respuestas antes de cambiar de página
-        if (Object.keys(form.data.answers).length > 0) {
-            form.setData('page', page);
-            form.post(`/tests/habilidades-blandas/answers`, {
-                preserveScroll: true,
-                preserveState: true,
-                onSuccess: () => {
-                    form.defaults('answers', {});
-                    form.reset('answers');
-                    // Navegar a la nueva página después de guardar
-                    window.location.href = `/tests/habilidades-blandas?page=${newPage}`;
-                },
-            });
-        } else {
-            // Navegar directamente si no hay respuestas nuevas
-            window.location.href = `/tests/habilidades-blandas?page=${newPage}`;
-        }
-    };
-
-    useEffect(() => {
-        if (Object.keys(form.data.answers).length > 0) {
-            const storageKey = `test-${test.id}-answers`;
-            localStorage.setItem(storageKey, JSON.stringify(form.data.answers));
-        }
-    }, [form.data.answers, test.id]);
-
-    // Cargar desde localStorage al iniciar
-    useEffect(() => {
-        const storageKey = `test-${test.id}-answers`;
-        const saved = localStorage.getItem(storageKey);
-
-        if (saved) {
+            // Guardar en localStorage
             try {
-                const parsedAnswers = JSON.parse(saved);
-                form.setData('answers', parsedAnswers);
-
-                // Opcional: Mostrar mensaje de recuperación
-                console.log('Respuestas recuperadas del almacenamiento local');
-            } catch (e) {
-                console.error('Error al cargar respuestas guardadas:', e);
+                localStorage.setItem(testStorageKey, JSON.stringify(updated));
+            } catch (error) {
+                console.error('Error en localStorage:', error);
             }
+
+            return updated;
+        });
+
+        // Ocultar validación cuando se responde
+        if (showValidation) {
+            setShowValidation(false);
         }
-    }, [test.id]);
+    };
+
+    // 🔍 Verificar si todas las preguntas de la página actual están respondidas
+    const areCurrentQuestionsAnswered = () => {
+        return questions.every((q) => {
+            const questionId = String(q.id);
+            const answer = allAnswers[questionId];
+            return answer !== undefined && answer !== null;
+        });
+    };
+
+    // 🔄 Cambiar de página (CON validación)
+    const handlePageChange = (newPage) => {
+        // Validar antes de cambiar de página
+        if (!areCurrentQuestionsAnswered()) {
+            setShowValidation(true);
+            // Scroll suave a la primera pregunta sin responder
+            const firstUnanswered = questions.find((q) => {
+                const questionId = String(q.id);
+                const answer = allAnswers[questionId];
+                return answer === undefined || answer === null;
+            });
+            if (firstUnanswered) {
+                const element = document.getElementById(
+                    `question-${firstUnanswered.id}`,
+                );
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }
+            }
+            return;
+        }
+
+        // Si todas están respondidas, permitir cambio de página
+        setShowValidation(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        router.get(
+            `/tests/habilidades-blandas?page=${newPage}`,
+            {},
+            {
+                preserveState: true,
+                preserveScroll: false,
+                only: ['questions', 'pagination', 'isLastPage'],
+            },
+        );
+    };
+
+    // 📨 Modal de confirmación para enviar
+    const openSubmitModal = () => {
+        // Validar antes de enviar
+        if (!areCurrentQuestionsAnswered()) {
+            setShowValidation(true);
+            const firstUnanswered = questions.find((q) => {
+                const questionId = String(q.id);
+                const answer = allAnswers[questionId];
+                return answer === undefined || answer === null;
+            });
+            if (firstUnanswered) {
+                const element = document.getElementById(
+                    `question-${firstUnanswered.id}`,
+                );
+                if (element) {
+                    element.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center',
+                    });
+                }
+            }
+            return;
+        }
+
+        if (Object.keys(allAnswers).length === 0) {
+            setModalAction('no_answers');
+            setIsModalOpen(true);
+            return;
+        }
+
+        setModalAction('submit');
+        setIsModalOpen(true);
+    };
+
+    // ✅ Enviar TODAS las respuestas al servidor
+    const executeSubmit = () => {
+        setIsModalOpen(false);
+        setIsSubmitting(true);
+
+        router.post(
+            '/tests/habilidades-blandas/submit',
+            { answers: allAnswers },
+            {
+                onSuccess: () => {
+                    console.log('✅ Test enviado exitosamente');
+                    // Limpiar localStorage después de enviar
+                    localStorage.removeItem(testStorageKey);
+                    setIsSubmitting(false);
+                },
+                onError: (errors) => {
+                    console.error('❌ Error al enviar test:', errors);
+                    setIsSubmitting(false);
+                    setModalAction('submit_error');
+                    setIsModalOpen(true);
+                },
+            },
+        );
+    };
+
+    const totalQuestions = pagination?.total || 0;
+    const totalAnsweredCount = Object.keys(allAnswers).length;
+
+    // Contar preguntas respondidas en la página actual
+    const currentPageAnswered = questions.filter((q) => {
+        const questionId = String(q.id);
+        return (
+            allAnswers[questionId] !== undefined &&
+            allAnswers[questionId] !== null
+        );
+    }).length;
 
     return (
         <StudentLayout user={props?.auth?.user}>
-            <div className="mx-auto max-w-5xl">
-                {/* Encabezado */}
-                <div className="mb-5 rounded-md border border-gray-200 bg-white shadow">
-                    <div className="border-b bg-gray-50 px-6 py-4">
-                        <h1 className="text-3xl font-extrabold text-gray-900">
-                            {test?.nombre || 'Habilidades Blandas'}
+            <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+                {/* MODALES */}
+                <ConfirmationModal
+                    isOpen={isModalOpen && modalAction === 'submit'}
+                    onClose={() => setIsModalOpen(false)}
+                    onConfirm={executeSubmit}
+                    title="Confirmar Envío"
+                    message="¿Deseas finalizar el test? No podrás modificar tus respuestas después."
+                />
+                <ConfirmationModal
+                    isOpen={isModalOpen && modalAction === 'no_answers'}
+                    onClose={() => setIsModalOpen(false)}
+                    onConfirm={() => setIsModalOpen(false)}
+                    title="Atención"
+                    message="Debes responder al menos una pregunta antes de finalizar el test."
+                />
+                <ConfirmationModal
+                    isOpen={isModalOpen && modalAction === 'submit_error'}
+                    onClose={() => setIsModalOpen(false)}
+                    onConfirm={() => setIsModalOpen(false)}
+                    title="Error"
+                    message="Hubo un problema al enviar el test. Por favor, verifica tu conexión."
+                />
+
+                {/* ENCABEZADO */}
+                <div className="mb-8 overflow-hidden rounded-xl bg-white shadow-sm">
+                    <div className="border-b px-6 py-6 sm:px-8 sm:py-8">
+                        <h1 className="mb-3 text-2xl font-bold text-gray-900 sm:text-3xl lg:text-4xl">
+                            {test?.nombre || 'Test de Habilidades Blandas'}
                         </h1>
-                    </div>
-                    <div className="px-6 pb-2 pt-3 text-sm text-gray-600">
-                        {test?.descripcion}
-                    </div>
-                    <div className="px-6 pb-4">
-                        <p className="text-sm font-medium text-blue-600">
-                            Instrucciones: Responde cada afirmación según qué
-                            tan de acuerdo estás. Usa la siguiente escala: 1 =
-                            Nunca, 2 = Casi nunca, 3 = A veces, 4 = Casi
-                            siempre, 5 = Siempre
+                        <p className="text-sm text-gray-600 sm:text-base lg:text-lg">
+                            {test?.descripcion ||
+                                'Responde las siguientes preguntas. Puedes navegar entre páginas y tus respuestas se guardarán automáticamente.'}
                         </p>
-                        <p className="mt-2 text-sm text-blue-600">
-                            Progreso: página {page} de{' '}
+                    </div>
+
+                    {/* BARRA DE PROGRESO */}
+                    <ProgressBar
+                        totalAnswered={totalAnsweredCount}
+                        totalQuestions={totalQuestions}
+                    />
+                </div>
+
+                {/* INDICADOR DE PÁGINA */}
+                <div className="mb-6 rounded-xl bg-white px-6 py-4 shadow-sm sm:px-8 sm:py-5">
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-xl font-bold text-gray-900 sm:text-2xl">
+                            Página {pagination?.current_page || 1} de{' '}
                             {pagination?.last_page || 1}
-                        </p>
+                        </h2>
+                        <span className="text-sm text-gray-600">
+                            {currentPageAnswered} de {questions.length}{' '}
+                            respondidas
+                        </span>
                     </div>
                 </div>
 
-                {/* Formulario de preguntas */}
-                <form
-                    onSubmit={handleSubmit}
-                    className="rounded-md border bg-white p-5 shadow"
-                >
-                    <ol className="space-y-6">
-                        {questions.map((q) => (
-                            <li
+                {/* ALERTA DE VALIDACIÓN */}
+                <ValidationAlert
+                    show={showValidation}
+                    onClose={() => setShowValidation(false)}
+                />
+
+                {/* PREGUNTAS */}
+                <div className="mb-8 space-y-6 sm:space-y-8">
+                    {questions.map((q) => {
+                        const questionId = String(q.id);
+                        const currentAnswer = allAnswers[questionId];
+                        const isAnswered =
+                            currentAnswer !== undefined &&
+                            currentAnswer !== null;
+                        const isUnanswered = showValidation && !isAnswered;
+
+                        return (
+                            <QuestionCard
                                 key={q.id}
-                                className="rounded-md border border-gray-200 p-4"
-                            >
-                                <p className="mb-3 font-semibold text-gray-900">
-                                    {q.numero_pregunta}. {q.texto_pregunta}
-                                </p>
+                                question={q}
+                                answer={currentAnswer}
+                                isUnanswered={isUnanswered}
+                                onAnswerChange={setAnswer}
+                            />
+                        );
+                    })}
+                </div>
 
-                                <div className="space-y-2 pl-1">
-                                    {(q.opciones ?? []).map((opt, idx) => {
-                                        const inputId = `q-${q.id}-${idx}`;
-                                        const value = opt?.valor;
-                                        const isChecked =
-                                            form.data.answers[q.id] === value ||
-                                            savedAnswers[q.id] === value;
+                {/* ALERTAS DE ESTADO */}
+                <SuccessAlert
+                    show={isSubmitting === false && modalAction === null}
+                />
+                <ErrorAlert show={modalAction === 'submit_error'} />
 
-                                        return (
-                                            <label
-                                                key={inputId}
-                                                htmlFor={inputId}
-                                                className="flex cursor-pointer items-center gap-2"
-                                            >
-                                                <input
-                                                    id={inputId}
-                                                    type="radio"
-                                                    name={`q-${q.id}`}
-                                                    value={value}
-                                                    checked={isChecked}
-                                                    onChange={() =>
-                                                        setAnswer(q.id, value)
-                                                    }
-                                                    className="h-4 w-4 accent-blue-600"
-                                                />
-                                                <span className="text-gray-800">
-                                                    {opt?.texto}
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </li>
-                        ))}
-                    </ol>
-
-                    {/* Pie con paginación y enviar */}
-                    <div className="mt-6 flex items-center justify-between">
-                        <Pagination
-                            pagination={pagination}
-                            onPageChange={handlePageChange}
-                        />
-
-                        {isLastPage && (
-                            <button
-                                type="submit"
-                                className="rounded-md bg-blue-600 px-4 py-2 font-medium text-white hover:bg-blue-700 disabled:opacity-60"
-                                disabled={form.processing}
-                            >
-                                {form.processing
-                                    ? 'Enviando…'
-                                    : 'Finalizar Test'}
-                            </button>
-                        )}
+                {/* BOTÓN DE ENVÍO (solo en última página) */}
+                {isLastPage && (
+                    <div className="mb-8 flex flex-col items-center gap-4">
+                        <button
+                            type="button"
+                            onClick={openSubmitModal}
+                            disabled={isSubmitting}
+                            className="flex w-full items-center justify-center gap-3 rounded-xl bg-blue-600 px-8 py-3 text-base font-bold text-white shadow-lg transition-all hover:scale-105 hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-10 sm:py-4 sm:text-lg"
+                        >
+                            {isSubmitting ? (
+                                <>
+                                    <Loader2 className="h-5 w-5 animate-spin sm:h-6 sm:w-6" />
+                                    <span>Enviando...</span>
+                                </>
+                            ) : (
+                                <>
+                                    <svg
+                                        width="20"
+                                        height="20"
+                                        viewBox="0 0 20 20"
+                                        fill="none"
+                                        className="h-5 w-5 sm:h-6 sm:w-6"
+                                    >
+                                        <path
+                                            d="M2 10L8 16L18 4"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                    Enviar Respuestas
+                                </>
+                            )}
+                        </button>
+                        <p className="text-center text-xs text-gray-600 sm:text-sm">
+                            Has respondido {totalAnsweredCount} de{' '}
+                            {totalQuestions} preguntas
+                        </p>
                     </div>
+                )}
 
-                    {/* Estado del auto-guardado */}
-                    {form.recentlySuccessful && (
-                        <div className="mt-4 text-sm text-green-600">
-                            Respuestas guardadas automáticamente
-                        </div>
-                    )}
-                </form>
+                {/* PAGINACIÓN CENTRADA */}
+                <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+                    <Pagination
+                        page={pagination?.current_page || 1}
+                        totalPages={pagination?.last_page || 1}
+                        onPageChange={handlePageChange}
+                    />
+                </div>
             </div>
         </StudentLayout>
     );

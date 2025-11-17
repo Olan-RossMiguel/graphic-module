@@ -31,85 +31,85 @@ class QuestionController extends Controller
      * @param Test $test
      * @return Response
      */
-public function take(Request $request, Test $test): Response
-{
-    $perPage = 5;
-    $page = (int) ($request->query('page', 1));
-    $user = $request->user();
-    $sessionId = $request->session()->getId();
+    public function take(Request $request, Test $test): Response
+    {
+        $perPage = 5;
+        $page = (int) ($request->query('page', 1));
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
 
-    // Preguntas paginadas
-    $paginator = Question::where('test_id', $test->id)
-        ->orderBy('numero_pregunta')
-        ->paginate($perPage)
-        ->withQueryString();
+        // Preguntas paginadas
+        $paginator = Question::where('test_id', $test->id)
+            ->orderBy('numero_pregunta')
+            ->paginate($perPage)
+            ->withQueryString();
 
-    $questionIds = $paginator->getCollection()->pluck('id')->all();
+        $questionIds = $paginator->getCollection()->pluck('id')->all();
 
-    // Respuestas ya guardadas en esta sesión (para preseleccionar valores)
-    $savedAnswers = StudentAnswer::query()
-        ->forStudent($user->id)
-        ->forTest($test->id)
-        ->forSession($sessionId)
-        ->whereIn('pregunta_id', $questionIds)
-        ->pluck('respuesta', 'pregunta_id');
+        // Respuestas ya guardadas en esta sesión (para preseleccionar valores)
+        $savedAnswers = StudentAnswer::query()
+            ->forStudent($user->id)
+            ->forTest($test->id)
+            ->forSession($sessionId)
+            ->whereIn('pregunta_id', $questionIds)
+            ->pluck('respuesta', 'pregunta_id');
 
-    // Mapeo limpio para Inertia
-    $questions = $paginator->getCollection()->map(function (Question $q) {
-        return [
-            'id' => $q->id,
-            'numero_pregunta' => $q->numero_pregunta,
-            'texto_pregunta' => $q->texto_pregunta,
-            'tipo_respuesta' => $q->tipo_respuesta,
-            'opciones' => $q->opciones,
-            'categoria' => $q->categoria,
-            'puntuacion' => $q->puntuacion,
-        ];
-    });
+        // Mapeo limpio para Inertia
+        $questions = $paginator->getCollection()->map(function (Question $q) {
+            return [
+                'id' => $q->id,
+                'numero_pregunta' => $q->numero_pregunta,
+                'texto_pregunta' => $q->texto_pregunta,
+                'tipo_respuesta' => $q->tipo_respuesta,
+                'opciones' => $q->opciones,
+                'categoria' => $q->categoria,
+                'puntuacion' => $q->puntuacion,
+            ];
+        });
 
-    // ✅ CORREGIR: Estructura de paginación que el componente espera
-    $template = $this->getTemplateForTest($test);
+        // ✅ CORREGIR: Estructura de paginación que el componente espera
+        $template = $this->getTemplateForTest($test);
 
-    return Inertia::render($template, [
-        'test' => [
-            'id' => $test->id,
-            'nombre' => $test->nombre,
-            'tipo' => $test->tipo,
-            'descripcion' => $test->descripcion,
-            'numero_preguntas' => $test->numero_preguntas,
-            'config' => $test->configuracion_opciones,
-        ],
-        'questions' => $questions,
-        'pagination' => [
-            'current_page' => $paginator->currentPage(),
-            'per_page' => $paginator->perPage(),
-            'last_page' => $paginator->lastPage(),
-            'total' => $paginator->total(),
-            // ✅ CORREGIDO: Usar booleanos para prev/next
-            'links' => [
-                'prev' => !is_null($paginator->previousPageUrl()),
-                'next' => !is_null($paginator->nextPageUrl()),
+        return Inertia::render($template, [
+            'test' => [
+                'id' => $test->id,
+                'nombre' => $test->nombre,
+                'tipo' => $test->tipo,
+                'descripcion' => $test->descripcion,
+                'numero_preguntas' => $test->numero_preguntas,
+                'config' => $test->configuracion_opciones,
             ],
-        ],
-        'savedAnswers' => $savedAnswers,
-        'isLastPage' => $paginator->currentPage() >= $paginator->lastPage(),
-    ]);
-}
+            'questions' => $questions,
+            'pagination' => [
+                'current_page' => $paginator->currentPage(),
+                'per_page' => $paginator->perPage(),
+                'last_page' => $paginator->lastPage(),
+                'total' => $paginator->total(),
+                // ✅ CORREGIDO: Usar booleanos para prev/next
+                'links' => [
+                    'prev' => !is_null($paginator->previousPageUrl()),
+                    'next' => !is_null($paginator->nextPageUrl()),
+                ],
+            ],
+            'savedAnswers' => $savedAnswers,
+            'isLastPage' => $paginator->currentPage() >= $paginator->lastPage(),
+        ]);
+    }
 
-/**
- * Determina el template de Inertia según el nombre del test
- */
-private function getTemplateForTest(Test $test): string
-{
-    $templates = [
-        'Asistencia Psicológica' => 'Tests/PsychologistAssistance',
-        'Estilos de Aprendizaje VAK' => 'Tests/LearningStyles',
-        'Inteligencia Emocional' => 'Tests/EmotionalIntelligence',
-        'Habilidades Blandas' => 'Tests/SoftSkills',
-    ];
+    /**
+     * Determina el template de Inertia según el nombre del test
+     */
+    private function getTemplateForTest(Test $test): string
+    {
+        $templates = [
+            'Asistencia Psicológica' => 'Tests/PsychologistAssistance',
+            'Estilos de Aprendizaje VAK' => 'Tests/LearningStyles',
+            'Inteligencia Emocional' => 'Tests/EmotionalIntelligence',
+            'Habilidades Blandas' => 'Tests/SoftSkills',
+        ];
 
-    return $templates[$test->nombre] ?? 'Tests/GenericTest';
-}
+        return $templates[$test->nombre] ?? 'Tests/GenericTest';
+    }
 
     /**
      * Guarda respuestas de la página actual (sin finalizar el test)
@@ -235,6 +235,7 @@ private function getTemplateForTest(Test $test): string
     /**
      * Calcula resultado genérico con suma ponderada
      * Formula: Σ (respuesta × puntuacion) para cada pregunta
+     * ✅ CORREGIDO: Ahora incluye total_respuestas en el JSON
      * 
      * @param Test $test
      * @param \App\Models\User $user
@@ -253,6 +254,7 @@ private function getTemplateForTest(Test $test): string
 
         $total = 0;
         $porCategoria = [];
+        $totalRespuestas = $rows->count(); // ✅ AGREGADO: Contar total de respuestas
 
         foreach ($rows as $r) {
             $peso = (int) $r->puntuacion;
@@ -277,6 +279,7 @@ private function getTemplateForTest(Test $test): string
 
         $resultadoJson = [
             'puntuacion_total' => $total,
+            'total_respuestas' => $totalRespuestas, // ✅ AGREGADO: Total de preguntas respondidas
             'por_categoria' => $porCategoria,
             'fecha_calculo' => now()->toDateTimeString(),
             'notas' => [

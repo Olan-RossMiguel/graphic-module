@@ -1,3 +1,17 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* En tu archivo CSS global o en un style tag */
+.pdf-pie-chart {
+    height: 500px;
+    min-height: 500px;
+}
+
+/* Solo aplicar estos estilos durante la generación del PDF */
+@media print {
+    .pdf-pie-chart {
+        height: 500px !important;
+        min-height: 500px !important;
+    }
+}

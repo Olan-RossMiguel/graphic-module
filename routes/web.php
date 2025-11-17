@@ -12,6 +12,7 @@ use App\Http\Controllers\StudentAnswerController;
 use App\Http\Controllers\Tests\SoftSkillsTestController;
 use App\Http\Controllers\Tutor\GroupController as TutorGroupController;
 use App\Http\Controllers\Psychologist\GroupController as PsychologistGroupController;
+use App\Http\Controllers\Tutor\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -94,6 +95,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/', 'show')->name('show');
                 Route::post('/answers', 'storePageAnswers')->name('answers.store');
                 Route::post('/submit', 'submit')->name('submit');
+                Route::get('/completed', 'completed')->name('completed');
             });
 
         // Test de Habilidades Blandas
@@ -104,6 +106,7 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/', 'show')->name('show');
                 Route::post('/answers', 'storePageAnswers')->name('answers.store');
                 Route::post('/submit', 'submit')->name('submit');
+                Route::get('/completed', 'completed')->name('completed');
             });
 
         // Tests genéricos (QuestionController)
@@ -127,7 +130,11 @@ Route::middleware(['auth'])->group(function () {
         
         // Estudiantes
         Route::get('/students/{student}', [StudentAnswerController::class, 'showStudentForTutor'])->name('students.show');
+         Route::get('/students/{student}/report/general', [ReportController::class, 'showGeneralReport'])
+        ->name('students.report.general');
     });
+
+    
 
     // ==========================================
     // RUTAS PARA PSICÓLOGOS

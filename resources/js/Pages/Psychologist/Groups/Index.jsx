@@ -85,7 +85,7 @@ const GroupsTable = ({ groups }) => {
                                     className="inline-flex items-center rounded-full border border-transparent bg-blue-600 px-3 py-1 text-xs font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                                 >
                                     <FaEye className="mr-1 h-3 w-3" />
-                                    Ver estudiantes
+                                    Ver grupo
                                 </Link>
                             </td>
                         </tr>

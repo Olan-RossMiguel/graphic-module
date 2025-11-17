@@ -9,8 +9,7 @@ import {
     FaUsers,
 } from 'react-icons/fa';
 
-const TutorSidebar = () => {
-    const [collapsed, setCollapsed] = useState(false);
+const TutorSidebar = ({ collapsed = false, onToggle = () => {} }) => {
     const [mobileOpen, setMobileOpen] = useState(true);
 
     const { url } = usePage();
@@ -20,12 +19,13 @@ const TutorSidebar = () => {
 
     return (
         <>
-            {/* DESKTOP */}
+            {/* DESKTOP - Ahora con fixed y height completo desde el navbar hacia abajo */}
             <aside
                 className={[
+                    'fixed bottom-0 left-0 top-16 z-20',
                     'hidden bg-[#0a5cb8] text-white md:flex md:flex-col',
                     collapsed ? 'w-20' : 'w-64',
-                    'overflow-hidden md:h-screen',
+                    'overflow-hidden',
                     'transform will-change-transform',
                     collapsed
                         ? 'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
@@ -40,7 +40,7 @@ const TutorSidebar = () => {
                     ].join(' ')}
                 >
                     <button
-                        onClick={() => setCollapsed(!collapsed)}
+                        onClick={() => onToggle(!collapsed)}
                         className={[
                             'rounded-md p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30',
                             collapsed ? 'mx-auto' : 'ml-auto',
@@ -99,7 +99,7 @@ const TutorSidebar = () => {
 
                         {/* Sobre nosotros */}
                         <Link
-                            href="/about" // Ruta directa - AJUSTA ESTA RUTA
+                            href="/about"
                             className="flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                             preserveScroll
                             title="Sobre nosotros"
@@ -129,10 +129,10 @@ const TutorSidebar = () => {
                 </div>
             </aside>
 
-            {/* MÓVIL: rail de iconos */}
+            {/* MÓVIL: rail de iconos con animación SUAVE */}
             <div
                 className={[
-                    'fixed inset-y-0 left-0 z-30 flex w-16 flex-col items-center space-y-6 bg-[#0a5cb8] py-5 text-white md:hidden',
+                    'fixed bottom-0 left-0 top-16 z-30 flex w-16 flex-col items-center space-y-6 bg-[#0a5cb8] py-5 text-white md:hidden',
                     'transform will-change-transform',
                     mobileOpen
                         ? 'translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
@@ -163,17 +163,13 @@ const TutorSidebar = () => {
                     <FaUser className="h-6 w-6" />
                 </Link>
                 <Link
-                    href="/tutor/groups" // Ruta directa - AJUSTA ESTA RUTA
+                    href={route('tutor.groups.index')}
                     className="p-3"
                     title="Mis grupos"
                 >
                     <FaUsers className="h-6 w-6" />
                 </Link>
-                <Link
-                    href="/about" // Ruta directa - AJUSTA ESTA RUTA
-                    className="p-3"
-                    title="Sobre nosotros"
-                >
+                <Link href="/about" className="p-3" title="Sobre nosotros">
                     <FaInfoCircle className="h-6 w-6" />
                 </Link>
 

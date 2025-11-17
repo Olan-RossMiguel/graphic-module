@@ -1,46 +1,15 @@
+import { ConfirmationModal } from '@/Components/UI/tests/ConfirmationModal';
+import { ErrorAlert } from '@/Components/UI/tests/ErrorAlert';
 import Pagination from '@/Components/UI/tests/Pagination';
+import { ProgressBar } from '@/Components/UI/tests/ProgressBar';
+import { QuestionCard } from '@/Components/UI/tests/QuestionCard';
+import { SuccessAlert } from '@/Components/UI/tests/SuccessAlert';
+import { ValidationAlert } from '@/Components/UI/tests/ValidationAlert';
 import StudentLayout from '@/Layouts/UI/StudentLayout';
 import { router, usePage } from '@inertiajs/react';
-import { AlertCircle, Loader2, X } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useState } from 'react';
 
-// --- COMPONENTE DE MODAL ---
-const ConfirmationModal = ({ isOpen, onClose, onConfirm, title, message }) => {
-    if (!isOpen) return null;
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-            <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
-                <div className="mb-4 flex items-center justify-between border-b pb-4">
-                    <h3 className="text-xl font-bold text-gray-900">{title}</h3>
-                    <button
-                        onClick={onClose}
-                        className="text-gray-400 transition-colors hover:text-gray-600"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                </div>
-                <p className="mb-6 text-gray-600">{message}</p>
-                <div className="flex justify-end gap-3">
-                    <button
-                        onClick={onClose}
-                        className="rounded-lg border-2 border-gray-300 px-5 py-2.5 font-semibold text-gray-700 transition-all hover:bg-gray-50"
-                    >
-                        Cancelar
-                    </button>
-                    <button
-                        onClick={onConfirm}
-                        className="rounded-lg bg-blue-600 px-5 py-2.5 font-semibold text-white shadow-md transition-all hover:bg-blue-700"
-                    >
-                        Confirmar
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// --- COMPONENTE PRINCIPAL ---
 export default function LearningStyles({
     questions = [],
     test,
@@ -60,10 +29,10 @@ export default function LearningStyles({
         }
     });
 
+    const [showValidation, setShowValidation] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalAction, setModalAction] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [showValidation, setShowValidation] = useState(false);
 
     // 📝 Guardar respuesta (solo en React + localStorage)
     const setAnswer = (qid, valor) => {
@@ -166,6 +135,7 @@ export default function LearningStyles({
             setIsModalOpen(true);
             return;
         }
+
         setModalAction('submit');
         setIsModalOpen(true);
     };
@@ -181,6 +151,7 @@ export default function LearningStyles({
             {
                 onSuccess: () => {
                     console.log('✅ Test enviado exitosamente');
+                    // Limpiar localStorage después de enviar
                     localStorage.removeItem(testStorageKey);
                     setIsSubmitting(false);
                 },
@@ -194,12 +165,8 @@ export default function LearningStyles({
         );
     };
 
-    const totalAnsweredCount = Object.keys(allAnswers).length;
     const totalQuestions = pagination?.total || test?.total_preguntas || 0;
-    const progressPercentage =
-        totalQuestions > 0
-            ? Math.round((totalAnsweredCount / totalQuestions) * 100)
-            : 0;
+    const totalAnsweredCount = Object.keys(allAnswers).length;
 
     // Contar preguntas respondidas en la página actual
     const currentPageAnswered = questions.filter((q) => {
@@ -249,23 +216,10 @@ export default function LearningStyles({
                     </div>
 
                     {/* BARRA DE PROGRESO */}
-                    <div className="bg-gray-50 px-6 py-5 sm:px-8 sm:py-6">
-                        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                            <span className="text-sm font-semibold text-gray-700">
-                                Progreso del Test
-                            </span>
-                            <span className="text-sm font-semibold text-gray-700">
-                                {totalAnsweredCount} de {totalQuestions}{' '}
-                                preguntas
-                            </span>
-                        </div>
-                        <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
-                            <div
-                                className="h-full rounded-full bg-blue-600 transition-all duration-500"
-                                style={{ width: `${progressPercentage}%` }}
-                            />
-                        </div>
-                    </div>
+                    <ProgressBar
+                        totalAnswered={totalAnsweredCount}
+                        totalQuestions={totalQuestions}
+                    />
                 </div>
 
                 {/* INDICADOR DE PÁGINA */}
@@ -283,26 +237,10 @@ export default function LearningStyles({
                 </div>
 
                 {/* ALERTA DE VALIDACIÓN */}
-                {showValidation && (
-                    <div className="animate-shake mb-6 flex items-start gap-3 rounded-xl border-2 border-red-200 bg-red-50 p-4 sm:p-5">
-                        <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-red-600 sm:h-6 sm:w-6" />
-                        <div className="flex-1">
-                            <h3 className="mb-1 text-sm font-bold text-red-900 sm:text-base">
-                                Preguntas sin responder
-                            </h3>
-                            <p className="text-sm text-red-700">
-                                Debes responder todas las preguntas de esta
-                                página antes de continuar.
-                            </p>
-                        </div>
-                        <button
-                            onClick={() => setShowValidation(false)}
-                            className="text-red-400 transition-colors hover:text-red-600"
-                        >
-                            <X className="h-5 w-5" />
-                        </button>
-                    </div>
-                )}
+                <ValidationAlert
+                    show={showValidation}
+                    onClose={() => setShowValidation(false)}
+                />
 
                 {/* PREGUNTAS */}
                 <div className="mb-8 space-y-6 sm:space-y-8">
@@ -315,98 +253,22 @@ export default function LearningStyles({
                         const isUnanswered = showValidation && !isAnswered;
 
                         return (
-                            <div
+                            <QuestionCard
                                 key={q.id}
-                                id={`question-${q.id}`}
-                                className={`rounded-xl p-6 shadow-sm transition-all duration-300 sm:p-8 ${
-                                    isUnanswered
-                                        ? 'border-2 border-red-200 bg-red-50'
-                                        : 'border-2 border-transparent bg-white'
-                                }`}
-                            >
-                                <div className="mb-6">
-                                    <div className="mb-4 flex items-start justify-between gap-3">
-                                        <h3
-                                            className={`text-base font-bold sm:text-lg ${
-                                                isUnanswered
-                                                    ? 'text-red-900'
-                                                    : 'text-gray-900'
-                                            }`}
-                                        >
-                                            Pregunta {q.numero_pregunta}
-                                        </h3>
-                                        {isUnanswered && (
-                                            <span className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-600">
-                                                <AlertCircle className="h-3 w-3" />
-                                                Sin responder
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p
-                                        className={`text-base leading-relaxed sm:text-lg ${
-                                            isUnanswered
-                                                ? 'text-red-800'
-                                                : 'text-gray-800'
-                                        }`}
-                                    >
-                                        {q.texto_pregunta}
-                                    </p>
-                                </div>
-
-                                <div className="space-y-3">
-                                    {(q.opciones ?? []).map((opt, idx) => {
-                                        const inputId = `q-${q.id}-${idx}`;
-                                        const optionValue = String(
-                                            opt?.valor || idx,
-                                        );
-                                        const isChecked =
-                                            currentAnswer === optionValue;
-
-                                        return (
-                                            <label
-                                                key={inputId}
-                                                htmlFor={inputId}
-                                                className={`flex cursor-pointer items-center gap-3 rounded-xl border-2 p-4 transition-all sm:gap-4 sm:p-5 ${
-                                                    isChecked
-                                                        ? 'border-blue-600 bg-blue-50 shadow-md'
-                                                        : isUnanswered
-                                                          ? 'border-red-200 bg-white hover:border-red-300 hover:bg-red-50'
-                                                          : 'border-gray-200 bg-white hover:border-blue-300 hover:bg-gray-50'
-                                                }`}
-                                            >
-                                                <div className="relative flex flex-shrink-0 items-center justify-center">
-                                                    <input
-                                                        id={inputId}
-                                                        type="radio"
-                                                        name={`q-${q.id}`}
-                                                        value={optionValue}
-                                                        checked={isChecked}
-                                                        onChange={() =>
-                                                            setAnswer(
-                                                                q.id,
-                                                                optionValue,
-                                                            )
-                                                        }
-                                                        className="h-5 w-5 cursor-pointer accent-blue-600 sm:h-6 sm:w-6"
-                                                    />
-                                                </div>
-                                                <span
-                                                    className={`flex-1 text-sm sm:text-base ${
-                                                        isChecked
-                                                            ? 'font-semibold text-blue-900'
-                                                            : 'text-gray-700'
-                                                    }`}
-                                                >
-                                                    {opt?.texto}
-                                                </span>
-                                            </label>
-                                        );
-                                    })}
-                                </div>
-                            </div>
+                                question={q}
+                                answer={currentAnswer}
+                                isUnanswered={isUnanswered}
+                                onAnswerChange={setAnswer}
+                            />
                         );
                     })}
                 </div>
+
+                {/* ALERTAS DE ESTADO */}
+                <SuccessAlert
+                    show={isSubmitting === false && modalAction === null}
+                />
+                <ErrorAlert show={modalAction === 'submit_error'} />
 
                 {/* BOTÓN DE ENVÍO (solo en última página) */}
                 {isLastPage && (

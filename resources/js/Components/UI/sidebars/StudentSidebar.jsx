@@ -12,8 +12,7 @@ import {
 } from 'react-icons/fa';
 import { RiMentalHealthFill } from 'react-icons/ri';
 
-const StudentSidebar = () => {
-    const [collapsed, setCollapsed] = useState(false);
+const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
     const [mobileOpen, setMobileOpen] = useState(true);
 
     const { url } = usePage();
@@ -24,20 +23,21 @@ const StudentSidebar = () => {
 
     return (
         <>
-            {/* DESKTOP */}
+            {/* DESKTOP - Ahora con fixed y height completo desde el navbar hacia abajo */}
             <aside
                 className={[
+                    'fixed bottom-0 left-0 top-16 z-20',
                     'hidden bg-[#0a5cb8] text-white md:flex md:flex-col',
                     collapsed ? 'w-20' : 'w-64',
-                    'overflow-hidden md:h-screen',
+                    'overflow-hidden',
                     'transform will-change-transform',
-                    // Misma animación que móvil
+                    // Animación suave
                     collapsed
                         ? 'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
                         : 'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
                 ].join(' ')}
             >
-                {/* Botón de colapsar/expandir - Centrado como los otros iconos cuando colapsado */}
+                {/* Botón de colapsar/expandir */}
                 <div
                     className={[
                         'flex items-center border-b border-white/15 p-4',
@@ -171,7 +171,7 @@ const StudentSidebar = () => {
             {/* MÓVIL: rail de iconos con animación SUAVE (abrir/cerrar) */}
             <div
                 className={[
-                    'fixed inset-y-0 left-0 z-30 flex w-16 flex-col items-center space-y-6 bg-[#0a5cb8] py-5 text-white md:hidden',
+                    'fixed bottom-0 left-0 top-16 z-30 flex w-16 flex-col items-center space-y-6 bg-[#0a5cb8] py-5 text-white md:hidden',
                     'transform will-change-transform',
                     // Animación suave
                     mobileOpen
@@ -180,7 +180,7 @@ const StudentSidebar = () => {
                     'border-r border-white/20 shadow-lg',
                 ].join(' ')}
             >
-                {/* Botón para abrir/cerrar el rail - DENTRO de la sidebar móvil */}
+                {/* Botón para abrir/cerrar el rail */}
                 <button
                     onClick={() => setMobileOpen(!mobileOpen)}
                     className="rounded-md p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
@@ -201,16 +201,32 @@ const StudentSidebar = () => {
                 >
                     <FaUser className="h-6 w-6" />
                 </a>
-                <a href="#" className="p-3" title="Asistencia psicológica">
+                <a
+                    href={route('tests.assistance.show')}
+                    className="p-3"
+                    title="Asistencia psicológica"
+                >
                     <RiMentalHealthFill className="h-6 w-6" />
                 </a>
-                <a href="#" className="p-3" title="Estilos de aprendizaje">
+                <a
+                    href={route('tests.learning-styles.show')}
+                    className="p-3"
+                    title="Estilos de aprendizaje"
+                >
                     <FaBook className="h-6 w-6" />
                 </a>
-                <a href="#" className="p-3" title="Inteligencia emocional">
+                <a
+                    href={route('tests.emotional-intelligence.show')}
+                    className="p-3"
+                    title="Inteligencia emocional"
+                >
                     <FaBrain className="h-6 w-6" />
                 </a>
-                <a href="#" className="p-3" title="Habilidades blandas">
+                <a
+                    href={route('tests.soft-skills.show')}
+                    className="p-3"
+                    title="Habilidades blandas"
+                >
                     <FaHandsHelping className="h-6 w-6" />
                 </a>
                 <a href="#" className="p-3" title="Sobre nosotros">
