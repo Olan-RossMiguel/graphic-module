@@ -12,6 +12,7 @@ use App\Http\Controllers\StudentAnswerController;
 use App\Http\Controllers\Tests\SoftSkillsTestController;
 use App\Http\Controllers\Tutor\GroupController as TutorGroupController;
 use App\Http\Controllers\Psychologist\GroupController as PsychologistGroupController;
+use App\Http\Controllers\Psychologist\ReportController as PsychologistReportController;
 use App\Http\Controllers\Tutor\ReportController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -150,6 +151,8 @@ Route::middleware(['auth'])->group(function () {
         
         // Estudiantes (puede ver cualquier estudiante)
         Route::get('/students/{student}', [StudentAnswerController::class, 'showStudentForPsychologist'])->name('students.show');
+        Route::get('/students/{student}/report/general', [PsychologistReportController::class, 'showGeneralReport'])
+        ->name('students.report.general');
     });
 });
 

@@ -9,6 +9,7 @@ const testTypeNames = {
     aprendizaje: 'Estilos de Aprendizaje',
     emocional: 'Inteligencia Emocional',
     habilidades: 'Habilidades Blandas',
+    asistencia: 'Asistencia Psicológica', // ✅ AGREGADO
 };
 
 const showLoadingIndicator = () => {
@@ -58,23 +59,43 @@ const showSuccessMessage = (message) => {
     }, 3000);
 };
 
-const generateFileName = (testTypeName, studentName) => {
+// ✅ FUNCIÓN MEJORADA: Manejo seguro de propiedades undefined
+const generateFileName = (testTypeName, student) => {
     const fechaArchivo = new Date().toISOString().split('T')[0];
-    const nombreLimpio = studentName.replace(/\s+/g, '_');
-    return `Reporte_${testTypeName.replace(/\s+/g, '_')}_${nombreLimpio}_${fechaArchivo}.pdf`;
+
+    // Construir nombre completo de forma segura
+    const nombre = student?.nombre || 'Sin';
+    const apellidoPaterno = student?.apellido_paterno || 'Nombre';
+    const apellidoMaterno = student?.apellido_materno || '';
+
+    const nombreCompleto = [nombre, apellidoPaterno, apellidoMaterno]
+        .filter(Boolean)
+        .join('_')
+        .replace(/\s+/g, '_')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, ''); // Quitar acentos
+
+    const testNameClean = (testTypeName || 'Test').replace(/\s+/g, '_');
+
+    return `Reporte_${testNameClean}_${nombreCompleto}_${fechaArchivo}.pdf`;
 };
 
 export const generatePDFReport = async (student, resultado, testType) => {
     let PDFReportComponent;
 
     try {
-        console.log('🔵 Iniciando generación de PDF...');
-        console.log('Datos recibidos:', { student, resultado, testType });
-
         showLoadingIndicator();
 
+        // Validación básica
+        if (!student) {
+            throw new Error('No se proporcionó información del estudiante');
+        }
+
+        if (!resultado) {
+            throw new Error('No se proporcionaron resultados del test');
+        }
+
         // Importar el componente
-        console.log('📦 Importando componente PDFReport...');
         const module = await import('@/Components/PDF/PDFReport');
         PDFReportComponent = module.default;
 
@@ -82,11 +103,9 @@ export const generatePDFReport = async (student, resultado, testType) => {
             throw new Error('No se pudo cargar el componente PDFReport');
         }
 
-        const testTypeName = testTypeNames[testType];
-        console.log('📄 Tipo de reporte:', testTypeName);
+        const testTypeName = testTypeNames[testType] || 'Test Psicológico';
 
         // Crear el elemento React
-        console.log('🏗️ Creando documento PDF...');
         const element = React.createElement(PDFReportComponent, {
             student,
             resultado,
@@ -95,21 +114,17 @@ export const generatePDFReport = async (student, resultado, testType) => {
         });
 
         // Generar el blob
-        console.log('⚙️ Generando blob...');
         const blob = await pdf(element).toBlob();
 
         if (!blob) {
             throw new Error('No se pudo generar el blob del PDF');
         }
 
-        console.log('✅ Blob generado:', blob.size, 'bytes');
-
         // Crear URL y descargar
-        console.log('💾 Iniciando descarga...');
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = generateFileName(testTypeName, student.nombre);
+        link.download = generateFileName(testTypeName, student); // ✅ Pasar objeto completo
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -119,12 +134,8 @@ export const generatePDFReport = async (student, resultado, testType) => {
 
         hideLoadingIndicator();
         showSuccessMessage('✓ Reporte generado exitosamente');
-
-        console.log('✅ PDF descargado exitosamente');
     } catch (error) {
         console.error('❌ Error detallado:', error);
-        console.error('Stack:', error.stack);
-        console.error('Componente cargado:', PDFReportComponent);
 
         hideLoadingIndicator();
 

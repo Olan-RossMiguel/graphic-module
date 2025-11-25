@@ -4,10 +4,10 @@ import StudentInfoCard from '@/Components/UI/tests/StudentInfoCard';
 import {
     GenericTestCard,
     LearningStylesCard,
+    PsychologicalAssistanceCard,
 } from '@/Components/UI/tests/TestResultCards';
-import TutorLayout from '@/Layouts/UI/TutorLayout';
+import PsychologistLayout from '@/Layouts/UI/PsychologistLayout';
 
-// ✅ IMPORTAR EL NUEVO GENERADOR
 import {
     generateDetailedPDFReport,
     generatePDFReport,
@@ -16,8 +16,6 @@ import {
 import { useState } from 'react';
 import { FaBrain, FaHandsHelping } from 'react-icons/fa';
 
-// ... (resto del código igual: TEST_TYPE_MAP, processTestResults, etc.)
-
 const TEST_TYPE_MAP = {
     estilos_aprendizaje: 'aprendizaje',
     'learning-styles': 'aprendizaje',
@@ -25,6 +23,9 @@ const TEST_TYPE_MAP = {
     'emotional-intelligence': 'emocional',
     habilidades_blandas: 'habilidades',
     'soft-skills': 'habilidades',
+    asistencia_psicologica: 'asistencia',
+    'psychological-assistance': 'asistencia',
+    'Asistencia Psicológica': 'asistencia',
 };
 
 const processTestResults = (testResults) => {
@@ -32,11 +33,14 @@ const processTestResults = (testResults) => {
         aprendizaje: null,
         emocional: null,
         habilidades: null,
+        asistencia: null,
     };
 
     testResults.forEach((result) => {
         const tipoProcesado =
-            TEST_TYPE_MAP[result.test_tipo] || result.test_tipo;
+            TEST_TYPE_MAP[result.test_tipo] ||
+            TEST_TYPE_MAP[result.test_nombre] ||
+            result.test_tipo;
 
         switch (tipoProcesado) {
             case 'aprendizaje':
@@ -82,6 +86,22 @@ const processTestResults = (testResults) => {
                     };
                 }
                 break;
+
+            case 'asistencia':
+                if (result.data) {
+                    // ✅ CRÍTICO: Asegurarse de pasar las respuestas individuales
+                    results.asistencia = {
+                        data: result.data, // Categorías con totales
+                        tipo: 'asistencia',
+                        fecha: result.fecha,
+                        puntuacion: result.puntuacion,
+                        nivel: result.nivel,
+                        por_categoria: result.por_categoria, // Detalle por categoría
+                        total_respuestas: result.total_respuestas,
+                        respuestas: result.respuestas || {}, // ✅ Respuestas individuales
+                    };
+                }
+                break;
         }
     });
 
@@ -98,6 +118,7 @@ export default function Show({ auth, student, testResults }) {
         aprendizaje: 'Estilos de Aprendizaje',
         emocional: 'Inteligencia Emocional',
         habilidades: 'Habilidades Blandas',
+        asistencia: 'Asistencia Psicológica',
     };
 
     const handleDownloadReport = (testType) => {
@@ -109,7 +130,6 @@ export default function Show({ auth, student, testResults }) {
         setShowModal(true);
     };
 
-    // ✅ FUNCIÓN MODIFICADA PARA USAR EL NUEVO GENERADOR
     const handleGenerateReport = async (reportType) => {
         if (!currentTestType) return;
 
@@ -117,10 +137,8 @@ export default function Show({ auth, student, testResults }) {
             const resultado = resultados[currentTestType];
 
             if (reportType === 'simple') {
-                // ✅ Usar el nuevo generador
                 await generatePDFReport(student, resultado, currentTestType);
             } else {
-                // ✅ Versión detallada (puedes crear un componente diferente después)
                 await generateDetailedPDFReport(
                     student,
                     resultado,
@@ -136,11 +154,11 @@ export default function Show({ auth, student, testResults }) {
     };
 
     return (
-        <TutorLayout user={auth.user}>
+        <PsychologistLayout user={auth.user}>
             <div className="space-y-6">
                 <StudentHeader
                     student={student}
-                    backRoute={route('tutor.groups.show', {
+                    backRoute={route('psychologist.groups.show', {
                         group: student.group_id,
                         semestre: student.semestre,
                     })}
@@ -177,10 +195,16 @@ export default function Show({ auth, student, testResults }) {
                         textColor="text-purple-900"
                         onDownloadReport={handleDownloadReport}
                     />
+
+                    {/* Card de Asistencia Psicológica */}
+                    <PsychologicalAssistanceCard
+                        resultado={resultados.asistencia}
+                        onDownloadReport={handleDownloadReport}
+                    />
                 </div>
             </div>
 
-            {/* Modal de opciones */}
+            {/* Modal de opciones PDF */}
             <PDFOptionsModal
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
@@ -189,6 +213,6 @@ export default function Show({ auth, student, testResults }) {
                     currentTestType ? testTypeNames[currentTestType] : ''
                 }
             />
-        </TutorLayout>
+        </PsychologistLayout>
     );
 }

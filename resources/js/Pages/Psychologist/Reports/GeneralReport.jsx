@@ -1,29 +1,35 @@
-// resources/js/Pages/Tutor/Reports/GeneralReport.jsx
+// resources/js/Pages/Psychologist/Reports/GeneralReport.jsx
 import GeneralPDFReport from '@/Components/PDF/GeneralPDFReport';
-import TutorLayout from '@/Layouts/UI/TutorLayout';
+import PsychologistLayout from '@/Layouts/UI/PsychologistLayout';
 import { Link } from '@inertiajs/react';
 import { PDFDownloadLink, PDFViewer } from '@react-pdf/renderer';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FaArrowLeft, FaDownload, FaEye } from 'react-icons/fa';
 
 export default function GeneralReport({ auth, student, testResults }) {
     const [showViewer, setShowViewer] = useState(false);
+    const [pdfError, setPdfError] = useState(null);
 
     // URL del logo (ajusta según tu estructura)
-    const logoUrl = 'https://i.imgur.com/ROYa0fx.png'; // o usa una URL absoluta
+    const logoUrl = 'https://i.imgur.com/ROYa0fx.png';
+
+    // 🔍 DEBUG: Ver qué datos llegan
+    useEffect(() => {
+        console.log('=== DEBUG PSYCHOLOGIST REPORT ===');
+        console.log('Student:', student);
+        console.log('Test Results:', testResults);
+        console.log('Logo URL:', logoUrl);
+    }, [student, testResults, logoUrl]);
 
     return (
-        <TutorLayout user={auth.user}>
+        <PsychologistLayout user={auth.user}>
             <div className="space-y-6">
                 {/* Header */}
                 <div className="md:flex md:items-center md:justify-between">
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center">
                             <Link
-                                href={route('tutor.groups.show', {
-                                    group: student.group_id,
-                                    semestre: student.semestre,
-                                })}
+                                href={route('psychologist.dashboard')}
                                 className="mr-4 text-gray-400 transition-colors hover:text-gray-600"
                             >
                                 <FaArrowLeft className="h-5 w-5" />
@@ -40,6 +46,22 @@ export default function GeneralReport({ auth, student, testResults }) {
                         </div>
                     </div>
                 </div>
+
+                {/* 🔍 DEBUG: Mostrar error si existe */}
+                {pdfError && (
+                    <div className="rounded-md bg-red-50 p-4">
+                        <div className="flex">
+                            <div className="ml-3">
+                                <h3 className="text-sm font-medium text-red-800">
+                                    Error en el PDF
+                                </h3>
+                                <div className="mt-2 text-sm text-red-700">
+                                    <p>{pdfError}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Información del Estudiante */}
                 <div className="overflow-hidden bg-white shadow sm:rounded-lg">
@@ -125,8 +147,12 @@ export default function GeneralReport({ auth, student, testResults }) {
                 {/* Acciones */}
                 <div className="flex space-x-4">
                     <button
-                        onClick={() => setShowViewer(!showViewer)}
-                        className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        type="button"
+                        onClick={() => {
+                            console.log('Toggle viewer clicked');
+                            setShowViewer(!showViewer);
+                        }}
+                        className="inline-flex cursor-pointer items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
                         <FaEye className="mr-2 h-4 w-4" />
                         {showViewer ? 'Ocultar' : 'Visualizar'} PDF
@@ -141,21 +167,31 @@ export default function GeneralReport({ auth, student, testResults }) {
                             />
                         }
                         fileName={`Reporte_General_${student.numero_control}.pdf`}
-                        className="inline-flex items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                        className="inline-flex cursor-pointer items-center rounded-md border border-transparent bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                     >
-                        {({ loading }) => (
-                            <>
-                                <FaDownload className="mr-2 h-4 w-4" />
-                                {loading ? 'Generando...' : 'Descargar PDF'}
-                            </>
-                        )}
+                        {({ loading, error }) => {
+                            if (error) {
+                                console.error('PDF Download Error:', error);
+                                setPdfError(error.message);
+                            }
+                            return (
+                                <>
+                                    <FaDownload className="mr-2 h-4 w-4" />
+                                    {loading
+                                        ? 'Generando...'
+                                        : error
+                                          ? 'Error en PDF'
+                                          : 'Descargar PDF'}
+                                </>
+                            );
+                        }}
                     </PDFDownloadLink>
                 </div>
 
                 {/* Visor de PDF */}
                 {showViewer && (
-                    <div className="overflow-hidden bg-white shadow sm:rounded-lg">
-                        <div className="h-screen-80 w-full">
+                    <div className="overflow-hidden rounded-lg bg-white shadow">
+                        <div style={{ height: '800px' }} className="w-full">
                             <PDFViewer width="100%" height="100%">
                                 <GeneralPDFReport
                                     student={student}
@@ -167,6 +203,6 @@ export default function GeneralReport({ auth, student, testResults }) {
                     </div>
                 )}
             </div>
-        </TutorLayout>
+        </PsychologistLayout>
     );
 }

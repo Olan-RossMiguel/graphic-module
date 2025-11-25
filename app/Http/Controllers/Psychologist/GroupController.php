@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Models\Group;
 use App\Models\User;
+use App\Models\Test;
+use App\Models\TestResult;
 
 class GroupController extends Controller
 {
@@ -23,7 +25,7 @@ class GroupController extends Controller
             ->selectRaw('COUNT(*) as total_estudiantes')
             ->groupBy('group_id', 'semestre')
             ->with('group:id,nombre')
-            ->orderBy('semestre', 'asc')  // Primero por semestre
+            ->orderBy('semestre', 'asc')
             ->get()
             ->map(function($item) {
                 return [
@@ -33,7 +35,7 @@ class GroupController extends Controller
                     'total_estudiantes' => $item->total_estudiantes,
                 ];
             })
-            ->sortBy('grupo_nombre')  // Luego por nombre de grupo
+            ->sortBy('grupo_nombre')
             ->values();
 
         return Inertia::render('Psychologist/Groups/Index', [
@@ -42,7 +44,8 @@ class GroupController extends Controller
     }
 
     /**
-     * Mostrar los estudiantes de un grupo específico
+     * Mostrar los estudiantes de un grupo específico con estado de tests
+     * La psicóloga ve 4 tests (los 3 del tutor + Asistencia Psicológica)
      */
     public function show(Request $request, $groupId)
     {
@@ -51,25 +54,34 @@ class GroupController extends Controller
         // Obtener el grupo
         $group = Group::findOrFail($groupId);
 
-        // Obtener estudiantes del grupo en ese semestre específico
+        // Obtener los IDs de los tests (4 tests para psicóloga)
+        $testAprendizaje = Test::where('tipo', Test::TYPE_VAK)->first();
+        $testEmocional = Test::where('tipo', Test::TYPE_IE)->first();
+        $testHabilidades = Test::where('tipo', Test::TYPE_SOFT_SKILLS)->first();
+        $testAsistencia = Test::where('nombre', 'Asistencia Psicológica')->first();
+        
+        $testIds = [
+            'aprendizaje' => $testAprendizaje?->id,
+            'emocional' => $testEmocional?->id,
+            'habilidades' => $testHabilidades?->id,
+            'asistencia' => $testAsistencia?->id, // ✅ Test exclusivo para psicóloga
+        ];
+
+        // Obtener estudiantes del grupo en ese semestre CON estado de tests
         $estudiantes = User::where('tipo', 'estudiante')
             ->where('group_id', $groupId)
             ->where('semestre', $semestre)
-            ->select([
-                'id',
-                'numero_control',
-                'nombre',
-                'apellido_paterno',
-                'apellido_materno',
-                'email',
-                'foto_perfil',
-                'estado',
-            ])
             ->orderBy('apellido_paterno')
             ->orderBy('apellido_materno')
             ->orderBy('nombre')
             ->get()
-            ->map(function($estudiante) {
+            ->map(function($estudiante) use ($testIds) {
+                // Obtener los test results del estudiante
+                $testResults = TestResult::where('estudiante_id', $estudiante->id)
+                    ->whereIn('test_id', array_filter($testIds))
+                    ->pluck('test_id')
+                    ->toArray();
+
                 return [
                     'id' => $estudiante->id,
                     'numero_control' => $estudiante->numero_control,
@@ -81,6 +93,13 @@ class GroupController extends Controller
                         ? asset('storage/' . $estudiante->foto_perfil)
                         : asset('images/default-avatar.png'),
                     'estado' => $estudiante->estado,
+                    // Estado de tests completados (TRUE = ✅, FALSE = ❌)
+                    'tests_completados' => [
+                        'aprendizaje' => in_array($testIds['aprendizaje'], $testResults),
+                        'emocional' => in_array($testIds['emocional'], $testResults),
+                        'habilidades' => in_array($testIds['habilidades'], $testResults),
+                        'asistencia' => in_array($testIds['asistencia'], $testResults), // ✅ Test adicional
+                    ],
                 ];
             });
 

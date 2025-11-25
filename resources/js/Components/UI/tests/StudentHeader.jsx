@@ -1,20 +1,19 @@
 import { Link } from '@inertiajs/react';
 import { FaArrowLeft } from 'react-icons/fa';
 
-export default function StudentHeader({ student }) {
+export default function StudentHeader({ student, backRoute }) {
     return (
         <div className="md:flex md:items-center md:justify-between">
             <div className="min-w-0 flex-1">
                 <div className="flex items-center">
-                    <Link
-                        href={route('tutor.groups.show', {
-                            group: student.group_id,
-                            semestre: student.semestre,
-                        })}
-                        className="mr-4 text-gray-400 transition-colors hover:text-gray-600"
-                    >
-                        <FaArrowLeft className="h-5 w-5" />
-                    </Link>
+                    {backRoute && (
+                        <Link
+                            href={backRoute}
+                            className="mr-4 text-gray-400 transition-colors hover:text-gray-600"
+                        >
+                            <FaArrowLeft className="h-5 w-5" />
+                        </Link>
+                    )}
                     <div className="flex items-center">
                         <img
                             className="mr-4 h-12 w-12 rounded-full object-cover"

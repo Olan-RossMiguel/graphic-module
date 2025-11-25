@@ -84,29 +84,16 @@ class StudentAnswerController extends Controller
                     ? json_decode($result->resultado_json, true)
                     : $result->resultado_json;
 
-                // 🔍 DEBUG: Log detallado de la estructura
-                Log::info('Processing Test Result', [
-                    'test_id' => $result->test_id,
-                    'test_tipo' => $result->test->tipo,
-                    'test_nombre' => $result->test->nombre,
-                    'resultado_json_keys' => array_keys($resultadoData ?? []),
-                    'has_por_categoria' => isset($resultadoData['por_categoria']),
-                    'por_categoria_keys' => isset($resultadoData['por_categoria']) ? array_keys($resultadoData['por_categoria']) : [],
-                ]);
-
                 // ✅ CALCULAR total_respuestas si no existe
                 $totalRespuestas = $resultadoData['total_respuestas'] ?? null;
 
-                // ✅ FIX: Si no existe, contar preguntas reales del test
                 if (!$totalRespuestas) {
-                    // Primero intentar contar desde la relación questions
                     $totalRespuestas = $result->test->questions()->count();
-
-                    // Si no hay preguntas registradas, usar valor por defecto
                     if ($totalRespuestas === 0) {
                         $totalRespuestas = $this->getDefaultQuestionCount($result->test->tipo);
                     }
                 }
+
                 // Preparar la respuesta base
                 $response = [
                     'id' => $result->id,
@@ -119,7 +106,6 @@ class StudentAnswerController extends Controller
                     'dato_curioso' => $result->dato_curioso,
                     'created_at' => $result->created_at,
                     'updated_at' => $result->updated_at,
-                    // ✅ AGREGADO: Incluir total_respuestas (calculado si no existe)
                     'total_respuestas' => $totalRespuestas,
                 ];
 
@@ -133,26 +119,64 @@ class StudentAnswerController extends Controller
                     $response['data'] = $this->formatEmotionalIntelligenceData($resultadoData);
                 } elseif ($result->test->tipo === 'habilidades_blandas' || $result->test->tipo === 'soft-skills') {
                     $response['data'] = $this->formatSoftSkillsData($resultadoData);
-                } elseif ($result->test->tipo === 'asistencia_psicologica' || $result->test->tipo === 'psychological-assistance') {
+                }
+                // ✅ MEJORADO: Manejo específico del test de Asistencia Psicológica
+                // Dentro de formatTestResults, en la sección de Asistencia Psicológica:
+                elseif ($result->test->nombre === 'Asistencia Psicológica') {
                     $response['data'] = $this->formatPsychologicalAssistanceData($resultadoData);
+                    $response['nivel'] = $resultadoData['nivel'] ?? null;
+                    $response['por_categoria'] = $resultadoData['por_categoria'] ?? null;
+
+                    // ✅ NUEVO: Obtener respuestas individuales
+                    $response['respuestas'] = $this->getIndividualAnswers($result->id, $result->test_id);
+                     Log::info('Response asistencia psicológica', [
+        'has_respuestas' => isset($response['respuestas']),
+        'respuestas_count' => count($response['respuestas'] ?? []),
+    ]);
                 } else {
                     // Formato genérico para otros tests
                     $response['data'] = $this->formatGenericData($resultadoData);
                 }
 
-                // 🔍 LOG para debugging - ver qué datos se están enviando
-                Log::info('Test Result Formatted', [
-                    'test_tipo' => $result->test->tipo,
-                    'has_data' => !empty($response['data']),
-                    'data_keys' => !empty($response['data']) ? array_keys($response['data']) : [],
-                    'puntuacion' => $response['puntuacion'],
-                    'total_respuestas' => $response['total_respuestas'],
-                ]);
-
                 return $response;
             });
     }
 
+   /**
+ * ✅ MEJORADO: Obtener respuestas individuales CON el texto de la pregunta
+ */
+private function getIndividualAnswers($testResultId, $testId)
+{
+    // Obtener el estudiante_id desde el test_result
+    $testResult = TestResult::find($testResultId);
+    
+    if (!$testResult) {
+        return [];
+    }
+
+    // Obtener las respuestas del estudiante con la información de la pregunta
+    $answers = StudentAnswer::where('estudiante_id', $testResult->estudiante_id)
+        ->where('test_id', $testId)
+        ->with('question')
+        ->orderBy('pregunta_id')
+        ->get();
+
+    $respuestas = [];
+
+    foreach ($answers as $answer) {
+        $preguntaKey = 'pregunta_' . $answer->question->numero_pregunta;
+        
+        // ✅ Guardar tanto la respuesta como el texto de la pregunta
+        $respuestas[$preguntaKey] = [
+            'respuesta' => $answer->respuesta,
+            'texto_pregunta' => $answer->question->texto_pregunta,
+            'categoria' => $answer->question->categoria,
+            'numero' => $answer->question->numero_pregunta,
+        ];
+    }
+Log::info('Respuestas formateadas', ['respuestas' => $respuestas]);
+    return $respuestas;
+}
     /**
      * ✅ NUEVO: Obtener número de preguntas por defecto según tipo de test
      */

@@ -175,7 +175,7 @@ export const styles = StyleSheet.create({
         fontWeight: 700,
         color: '#495057',
         textTransform: 'uppercase',
-        textAlign: 'left', // ← AGREGAR
+        textAlign: 'left',
     },
     tableCell: {
         fontSize: 9,
@@ -183,25 +183,26 @@ export const styles = StyleSheet.create({
     },
     tableCellDimension: {
         flex: 2,
-        paddingRight: 10, // ← AGREGAR
+        paddingRight: 10,
     },
     tableCellScore: {
-        width: 100, // ← CAMBIAR DE flex A width fijo
+        width: 100,
         textAlign: 'center',
         fontWeight: 700,
         fontSize: 11,
     },
     tableCellColor: {
-        width: 100, // ← CAMBIAR DE flex A width fijo
+        width: 100,
         alignItems: 'center',
         justifyContent: 'center',
-        textAlign: 'center', // ← AGREGAR
+        textAlign: 'center',
     },
     colorDot: {
         width: 12,
         height: 12,
         borderRadius: 6,
     },
+
     // INFO BOX
     infoBox: {
         marginTop: 12,
@@ -216,6 +217,10 @@ export const styles = StyleSheet.create({
     infoBoxGreen: {
         backgroundColor: '#e8f5e9',
         borderLeftColor: '#4caf50',
+    },
+    infoBoxBlue: {
+        backgroundColor: '#e3f2fd',
+        borderLeftColor: '#2196f3',
     },
     infoBoxTitle: {
         fontSize: 10,
@@ -240,5 +245,106 @@ export const styles = StyleSheet.create({
         borderTopWidth: 1,
         borderTopColor: '#e9ecef',
         paddingTop: 8,
+    },
+
+    // ✅ ESTILOS PARA ASISTENCIA PSICOLÓGICA
+    subtitle: {
+        fontSize: 10,
+        color: '#666',
+        marginBottom: 12,
+    },
+
+    responsesList: {
+        marginTop: 12,
+    },
+
+    responseItem: {
+        marginBottom: 12,
+        padding: 10,
+        backgroundColor: '#f9fafb',
+        borderRadius: 4,
+        borderLeftWidth: 3,
+        borderLeftColor: '#6b7280',
+    },
+
+    responseHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+
+    responseNumber: {
+        fontSize: 10,
+        fontWeight: 700,
+        backgroundColor: '#374151',
+        color: 'white',
+        padding: 4,
+        paddingHorizontal: 8,
+        borderRadius: 3,
+    },
+
+    responseQuestion: {
+        fontSize: 10,
+        color: '#1f2937',
+        marginBottom: 6,
+    },
+
+    responseAnswer: {
+        backgroundColor: 'white',
+        padding: 8,
+        borderRadius: 4,
+    },
+
+    responseAnswerText: {
+        fontSize: 10,
+        fontWeight: 700,
+        color: '#374151',
+    },
+
+    // Estilos para preguntas Likert
+    likertItem: {
+        marginBottom: 10,
+        padding: 10,
+        backgroundColor: 'white',
+        borderRadius: 4,
+        borderWidth: 1,
+        borderColor: '#e5e7eb',
+    },
+
+    likertHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 6,
+    },
+
+    likertBadge: {
+        padding: 4,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+    },
+
+    badgeGreen: {
+        backgroundColor: '#10b981',
+    },
+
+    badgeYellow: {
+        backgroundColor: '#f59e0b',
+    },
+
+    badgeRed: {
+        backgroundColor: '#ef4444',
+    },
+
+    likertBadgeText: {
+        fontSize: 9,
+        fontWeight: 700,
+        color: 'white',
+    },
+
+    likertAnswer: {
+        fontSize: 9,
+        color: '#6b7280',
+        marginTop: 4,
     },
 });

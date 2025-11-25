@@ -29,7 +29,7 @@ class AssistanceTestController extends QuestionController
     public function show(Request $request)
     {
         $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
-        return $this->take($request, $test); 
+        return $this->take($request, $test);
     }
 
     /**
@@ -38,147 +38,147 @@ class AssistanceTestController extends QuestionController
      * 
      * POST /tests/asistencia-psicologica/answers
      */
- /**
- * OVERRIDE: Guardar respuestas de página
- * POST /tests/asistencia-psicologica/answers
- */
-public function storePageAnswers(Request $request, ?Test $test = null)
-{
-    // Si no se pasa el test por ruta, lo buscamos
-    if (!$test) {
-        $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
-    }
-
-    $request->validate([
-        'answers' => 'required|array',
-        'answers.*' => 'nullable',
-        'page' => 'nullable|integer|min:1',
-    ]);
-
-    $user = $request->user();
-    $sessionId = $request->session()->getId();
-    $answers = $request->input('answers', []);
-
-    DB::transaction(function () use ($answers, $test, $user, $sessionId) {
-        $now = now();
-
-        foreach ($answers as $questionId => $value) {
-            if ($value === null || $value === '') continue;
-
-            $belongs = Question::where('id', $questionId)
-                ->where('test_id', $test->id)
-                ->exists();
-                
-            if (!$belongs) continue;
-
-            StudentAnswer::recordAnswer([
-                'estudiante_id' => $user->id,
-                'test_id' => $test->id,
-                'pregunta_id' => (int) $questionId,
-                'sesion_id' => $sessionId,
-                'respuesta' => $this->normalizeAnswer($value),
-                'fecha_respuesta' => $now,
-            ]);
-        }
-    });
-
-    return back()->with('status', 'Respuestas guardadas correctamente');
-}
-
-/**
- * OVERRIDE: Envía y finaliza el test
- * POST /tests/asistencia-psicologica/submit
- */
-public function submit(Request $request, ?Test $test = null)
-{
-    // Si no se pasa el test por ruta, lo buscamos
-    if (!$test) {
-        $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
-    }
-
-    $request->validate([
-        'answers' => 'required|array',
-        'answers.*' => 'nullable',
-    ]);
-
-    $user = $request->user();
-    $sessionId = $request->session()->getId();
-    $answers = $request->input('answers', []);
-
-    $result = null;
-
-    DB::transaction(function () use ($answers, $test, $user, $sessionId, &$result) {
-        $now = now();
-
-        // Guardar todas las respuestas
-        foreach ($answers as $questionId => $value) {
-            $belongs = Question::where('id', $questionId)
-                ->where('test_id', $test->id)
-                ->exists();
-                
-            if (!$belongs) continue;
-
-            StudentAnswer::recordAnswer([
-                'estudiante_id' => $user->id,
-                'test_id' => $test->id,
-                'pregunta_id' => (int) $questionId,
-                'sesion_id' => $sessionId,
-                'respuesta' => $this->normalizeAnswer($value),
-                'fecha_respuesta' => $now,
-            ]);
+    /**
+     * OVERRIDE: Guardar respuestas de página
+     * POST /tests/asistencia-psicologica/answers
+     */
+    public function storePageAnswers(Request $request, ?Test $test = null)
+    {
+        // Si no se pasa el test por ruta, lo buscamos
+        if (!$test) {
+            $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
         }
 
-        // Calcular y guardar resultado
-        $this->calculateResult($test, $user, $sessionId);
+        $request->validate([
+            'answers' => 'required|array',
+            'answers.*' => 'nullable',
+            'page' => 'nullable|integer|min:1',
+        ]);
 
-        // Obtener el resultado guardado
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+        $answers = $request->input('answers', []);
+
+        DB::transaction(function () use ($answers, $test, $user, $sessionId) {
+            $now = now();
+
+            foreach ($answers as $questionId => $value) {
+                if ($value === null || $value === '') continue;
+
+                $belongs = Question::where('id', $questionId)
+                    ->where('test_id', $test->id)
+                    ->exists();
+
+                if (!$belongs) continue;
+
+                StudentAnswer::recordAnswer([
+                    'estudiante_id' => $user->id,
+                    'test_id' => $test->id,
+                    'pregunta_id' => (int) $questionId,
+                    'sesion_id' => $sessionId,
+                    'respuesta' => $this->normalizeAnswer($value),
+                    'fecha_respuesta' => $now,
+                ]);
+            }
+        });
+
+        return back()->with('status', 'Respuestas guardadas correctamente');
+    }
+
+    /**
+     * OVERRIDE: Envía y finaliza el test
+     * POST /tests/asistencia-psicologica/submit
+     */
+    public function submit(Request $request, ?Test $test = null)
+    {
+        // Si no se pasa el test por ruta, lo buscamos
+        if (!$test) {
+            $test = Test::where('nombre', self::TEST_NAME)->firstOrFail();
+        }
+
+        $request->validate([
+            'answers' => 'required|array',
+            'answers.*' => 'nullable',
+        ]);
+
+        $user = $request->user();
+        $sessionId = $request->session()->getId();
+        $answers = $request->input('answers', []);
+
+        $result = null;
+
+        DB::transaction(function () use ($answers, $test, $user, $sessionId, &$result) {
+            $now = now();
+
+            // Guardar todas las respuestas
+            foreach ($answers as $questionId => $value) {
+                $belongs = Question::where('id', $questionId)
+                    ->where('test_id', $test->id)
+                    ->exists();
+
+                if (!$belongs) continue;
+
+                StudentAnswer::recordAnswer([
+                    'estudiante_id' => $user->id,
+                    'test_id' => $test->id,
+                    'pregunta_id' => (int) $questionId,
+                    'sesion_id' => $sessionId,
+                    'respuesta' => $this->normalizeAnswer($value),
+                    'fecha_respuesta' => $now,
+                ]);
+            }
+
+            // Calcular y guardar resultado
+            $this->calculateResult($test, $user, $sessionId);
+
+            // Obtener el resultado guardado
+            $result = TestResult::where('estudiante_id', $user->id)
+                ->where('test_id', $test->id)
+                ->first();
+        });
+
+        return Inertia::render('Tests/TestCompleted', [
+            'test' => [
+                'id' => $test->id,
+                'nombre' => $test->nombre,
+                'descripcion' => $test->descripcion,
+            ],
+            'result' => $result ? [
+                'fecha_realizacion' => $result->fecha_realizacion,
+                'puntuacion_total' => $result->puntuacion_total,
+            ] : null,
+        ]);
+    }
+
+    public function completed(Request $request)
+    {
+        $test = $this->getTest();
+        $user = $request->user();
+
         $result = TestResult::where('estudiante_id', $user->id)
             ->where('test_id', $test->id)
             ->first();
-    });
 
-    return Inertia::render('Tests/TestCompleted', [
-        'test' => [
-            'id' => $test->id,
-            'nombre' => $test->nombre,
-            'descripcion' => $test->descripcion,
-        ],
-        'result' => $result ? [
-            'fecha_realizacion' => $result->fecha_realizacion,
-            'puntuacion_total' => $result->puntuacion_total,
-        ] : null,
-    ]);
-}
+        return Inertia::render('Tests/TestCompleted', [
+            'test' => [
+                'id' => $test->id,
+                'nombre' => $test->nombre,
+                'descripcion' => $test->descripcion,
+            ],
+            'result' => $result ? [
+                'fecha_realizacion' => $result->fecha_realizacion,
+                'puntuacion_total' => $result->puntuacion_total,
+            ] : null,
+        ]);
+    }
 
-public function completed(Request $request)
-{
-    $test = $this->getTest();
-    $user = $request->user();
-
-    $result = TestResult::where('estudiante_id', $user->id)
-        ->where('test_id', $test->id)
-        ->first();
-
-    return Inertia::render('Tests/TestCompleted', [
-        'test' => [
-            'id' => $test->id,
-            'nombre' => $test->nombre,
-            'descripcion' => $test->descripcion,
-        ],
-        'result' => $result ? [
-            'fecha_realizacion' => $result->fecha_realizacion,
-            'puntuacion_total' => $result->puntuacion_total,
-        ] : null,
-    ]);
-}
-
-/**
- * Obtiene el test de Asistencia Psicológica
- */
-private function getTest(): Test
-{
-    return Test::where('nombre', self::TEST_NAME)->firstOrFail();
-}
+    /**
+     * Obtiene el test de Asistencia Psicológica
+     */
+    private function getTest(): Test
+    {
+        return Test::where('nombre', self::TEST_NAME)->firstOrFail();
+    }
 
     /**
      * Normaliza respuestas con valores mixtos (string/int)
@@ -199,19 +199,19 @@ private function getTest(): Test
             'si' => 1,
             'no' => 0,
             'indeciso' => 0,
-            
+
             // Frecuencias
             'semanal' => 4,
             'quincenal' => 3,
             'mensual' => 2,
             'ocasional' => 1,
-            
+
             // Duración
             '3_meses' => 1,
             '3_6_meses' => 2,
             '6_12_meses' => 3,
             'mas_1_ano' => 4,
-            
+
             // Intensidad
             'mucho' => 5,
             'parte' => 3,
@@ -235,7 +235,7 @@ private function getTest(): Test
         // Obtener todas las respuestas con sus preguntas
         $rows = DB::table('student_answers as sa')
             ->join('questions as q', 'q.id', '=', 'sa.pregunta_id')
-            ->selectRaw('q.categoria, q.puntuacion, sa.respuesta')
+            ->selectRaw('q.id as pregunta_id, q.categoria, q.puntuacion, sa.respuesta')
             ->where('sa.estudiante_id', $user->id)
             ->where('sa.test_id', $test->id)
             ->where('sa.sesion_id', $sessionId)
@@ -243,11 +243,15 @@ private function getTest(): Test
 
         $total = 0;
         $porCategoria = [];
+        $respuestasIndividuales = []; // ← NUEVO
 
         // Calcular puntuación ponderada
         foreach ($rows as $r) {
             $peso = (int) $r->puntuacion;
             $resp = (int) $r->respuesta;
+
+            // Guardar respuesta individual ← NUEVO
+            $respuestasIndividuales["pregunta_{$r->pregunta_id}"] = $resp;
 
             // Acumular total ponderado
             $total += ($peso > 0 ? $resp * $peso : 0);
@@ -260,7 +264,7 @@ private function getTest(): Test
                     'sumaPonderada' => 0,
                 ];
             }
-            
+
             $porCategoria[$r->categoria]['suma'] += $resp;
             $porCategoria[$r->categoria]['sumaPonderada'] += ($peso > 0 ? $resp * $peso : 0);
             $porCategoria[$r->categoria]['items']++;
@@ -269,6 +273,7 @@ private function getTest(): Test
         $resultadoJson = [
             'puntuacion_total' => $total,
             'por_categoria' => $porCategoria,
+            'respuestas' => $respuestasIndividuales, // ← NUEVO
             'nivel' => $this->getInterpretation($total),
             'fecha_calculo' => now()->toDateTimeString(),
         ];
@@ -302,7 +307,7 @@ private function getTest(): Test
         } elseif ($total >= 20) {
             return 'Nivel bajo - Mantener seguimiento preventivo';
         }
-        
+
         return 'Nivel mínimo - No se requiere intervención inmediata';
     }
 }

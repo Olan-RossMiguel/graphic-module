@@ -1,8 +1,7 @@
-import { useState } from 'react';
-import { FaFileAlt, FaFilePdf, FaTimes } from 'react-icons/fa';
+import { FaDownload, FaFilePdf, FaTimes } from 'react-icons/fa';
 
 /**
- * Modal para seleccionar el tipo de reporte PDF a generar
+ * Modal de confirmación para generar reporte PDF
  */
 export default function PDFOptionsModal({
     isOpen,
@@ -10,12 +9,10 @@ export default function PDFOptionsModal({
     onSelectOption,
     testTypeName,
 }) {
-    const [selectedOption, setSelectedOption] = useState('simple');
-
     if (!isOpen) return null;
 
     const handleGenerate = () => {
-        onSelectOption(selectedOption);
+        onSelectOption('simple');
         onClose();
     };
 
@@ -23,15 +20,15 @@ export default function PDFOptionsModal({
         <div className="fixed inset-0 z-50 flex items-center justify-center">
             {/* Overlay */}
             <div
-                className="absolute inset-0 bg-black bg-opacity-50"
+                className="absolute inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
                 onClick={onClose}
             />
 
             {/* Modal */}
-            <div className="relative z-10 w-full max-w-2xl rounded-lg bg-white p-6 shadow-xl">
+            <div className="relative z-10 w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
                 {/* Header */}
-                <div className="mb-6 flex items-center justify-between">
-                    <h2 className="text-2xl font-bold text-gray-900">
+                <div className="mb-4 flex items-center justify-between">
+                    <h2 className="text-xl font-bold text-gray-900">
                         Generar Reporte PDF
                     </h2>
                     <button
@@ -42,114 +39,60 @@ export default function PDFOptionsModal({
                     </button>
                 </div>
 
-                <p className="mb-6 text-gray-600">
-                    Selecciona el tipo de reporte que deseas generar para{' '}
-                    {testTypeName}
-                </p>
-
-                {/* Opciones */}
-                <div className="space-y-4">
-                    {/* Opción Simple */}
-                    <div
-                        onClick={() => setSelectedOption('simple')}
-                        className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                            selectedOption === 'simple'
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                    >
-                        <div className="flex items-start gap-4">
-                            <div
-                                className={`rounded-full p-3 ${
-                                    selectedOption === 'simple'
-                                        ? 'bg-blue-500'
-                                        : 'bg-gray-200'
-                                }`}
-                            >
-                                <FaFilePdf
-                                    className={`h-6 w-6 ${
-                                        selectedOption === 'simple'
-                                            ? 'text-white'
-                                            : 'text-gray-600'
-                                    }`}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="mb-1 text-lg font-semibold text-gray-900">
-                                    Reporte Simple
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                    Captura exacta de lo que ves en pantalla.
-                                    Incluye todas las gráficas, colores y
-                                    formato tal como aparecen en el dashboard.
-                                </p>
-                                <ul className="mt-2 space-y-1 text-sm text-gray-500">
-                                    <li>✓ Orientación horizontal</li>
-                                    <li>✓ Alta calidad de imagen</li>
-                                    <li>✓ Generación rápida</li>
-                                </ul>
-                            </div>
+                {/* Contenido */}
+                <div className="mb-6">
+                    <div className="mb-4 flex items-center justify-center">
+                        <div className="rounded-full bg-blue-100 p-4">
+                            <FaFilePdf className="h-12 w-12 text-blue-600" />
                         </div>
                     </div>
 
-                    {/* Opción Personalizada */}
-                    <div
-                        onClick={() => setSelectedOption('custom')}
-                        className={`cursor-pointer rounded-lg border-2 p-4 transition-all ${
-                            selectedOption === 'custom'
-                                ? 'border-blue-500 bg-blue-50'
-                                : 'border-gray-200 hover:border-gray-300'
-                        }`}
-                    >
-                        <div className="flex items-start gap-4">
-                            <div
-                                className={`rounded-full p-3 ${
-                                    selectedOption === 'custom'
-                                        ? 'bg-blue-500'
-                                        : 'bg-gray-200'
-                                }`}
-                            >
-                                <FaFileAlt
-                                    className={`h-6 w-6 ${
-                                        selectedOption === 'custom'
-                                            ? 'text-white'
-                                            : 'text-gray-600'
-                                    }`}
-                                />
-                            </div>
-                            <div className="flex-1">
-                                <h3 className="mb-1 text-lg font-semibold text-gray-900">
-                                    Reporte Personalizado
-                                </h3>
-                                <p className="text-sm text-gray-600">
-                                    Reporte profesional con portada, gráficas
-                                    optimizadas y secciones bien organizadas.
-                                    Ideal para presentaciones.
-                                </p>
-                                <ul className="mt-2 space-y-1 text-sm text-gray-500">
-                                    <li>✓ Portada profesional</li>
-                                    <li>✓ Gráficas optimizadas</li>
-                                    <li>✓ Secciones organizadas</li>
-                                    <li>✓ Análisis detallado</li>
-                                </ul>
-                            </div>
-                        </div>
+                    <p className="mb-4 text-center text-gray-700">
+                        Se generará un reporte completo del test de
+                    </p>
+                    <p className="text-center text-lg font-semibold text-gray-900">
+                        {testTypeName}
+                    </p>
+
+                    <div className="mt-4 rounded-lg bg-gray-50 p-4">
+                        <p className="mb-2 text-sm font-medium text-gray-700">
+                            El reporte incluye:
+                        </p>
+                        <ul className="space-y-1 text-sm text-gray-600">
+                            <li className="flex items-center gap-2">
+                                <span className="text-green-500">✓</span>
+                                Información del estudiante
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="text-green-500">✓</span>
+                                Resultados y puntuaciones
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="text-green-500">✓</span>
+                                Gráficas y visualizaciones
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <span className="text-green-500">✓</span>
+                                Análisis detallado
+                            </li>
+                        </ul>
                     </div>
                 </div>
 
                 {/* Botones de acción */}
-                <div className="mt-6 flex justify-end gap-3">
+                <div className="flex gap-3">
                     <button
                         onClick={onClose}
-                        className="rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50"
+                        className="flex-1 rounded-lg border border-gray-300 px-4 py-2 font-medium text-gray-700 transition-colors hover:bg-gray-50"
                     >
                         Cancelar
                     </button>
                     <button
                         onClick={handleGenerate}
-                        className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700"
+                        className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors hover:bg-blue-700"
                     >
-                        Generar Reporte
+                        <FaDownload className="h-4 w-4" />
+                        Descargar PDF
                     </button>
                 </div>
             </div>
