@@ -2,17 +2,17 @@ import PsychologistLayout from '@/Layouts/UI/PsychologistLayout';
 import { Link, usePage } from '@inertiajs/react';
 import { FaEye, FaUserGraduate, FaUsers } from 'react-icons/fa';
 
-// Componente de tabla simple con Tailwind
-const GroupsTable = ({ groups }) => {
+// Componente de tabla reutilizable
+const GroupTable = ({ groups, groupLetter }) => {
     if (!groups || groups.length === 0) {
         return (
             <div className="py-12 text-center">
                 <FaUsers className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No hay grupos disponibles
+                    No hay grupos {groupLetter} disponibles
                 </h3>
                 <p className="mt-1 text-sm text-gray-500">
-                    No se han registrado grupos en el sistema.
+                    No se han registrado grupos {groupLetter} en el sistema.
                 </p>
             </div>
         );
@@ -99,6 +99,10 @@ const GroupsTable = ({ groups }) => {
 export default function PsychologistGroupsIndex({ auth, groups }) {
     const { props } = usePage();
 
+    // Separar grupos por letra (A o B)
+    const groupsA = groups?.filter((g) => g.grupo_nombre?.includes('A')) || [];
+    const groupsB = groups?.filter((g) => g.grupo_nombre?.includes('B')) || [];
+
     // Calcular estadísticas
     const totalGroups = groups?.length || 0;
     const totalStudents =
@@ -158,8 +162,21 @@ export default function PsychologistGroupsIndex({ auth, groups }) {
                     </div>
                 </div>
 
-                {/* Tabla de grupos */}
-                <GroupsTable groups={groups} />
+                {/* Tabla Grupo A */}
+                <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Grupo A
+                    </h3>
+                    <GroupTable groups={groupsA} groupLetter="A" />
+                </div>
+
+                {/* Tabla Grupo B */}
+                <div className="space-y-3">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                        Grupo B
+                    </h3>
+                    <GroupTable groups={groupsB} groupLetter="B" />
+                </div>
             </div>
         </PsychologistLayout>
     );

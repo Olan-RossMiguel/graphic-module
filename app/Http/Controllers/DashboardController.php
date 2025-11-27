@@ -54,22 +54,56 @@ class DashboardController extends Controller
     /**
      * Dashboard para estudiantes
      */
+    /**
+     * Dashboard para estudiantes
+     */
     public function studentDashboard()
     {
         if (Auth::user()->tipo !== 'estudiante') {
             abort(403, 'No autorizado');
         }
 
+        $userId = Auth::id();
+
+        // Obtener todos los tests disponibles
+        $allTests = Test::select('id', 'nombre', 'tipo', 'descripcion')
+            ->orderBy('id')
+            ->get();
+
+        // Obtener resultados completados con detalles
+        $completedResults = TestResult::where('estudiante_id', $userId)
+            ->with('test:id,nombre,tipo')
+            ->orderBy('fecha_realizacion', 'desc')
+            ->get()
+            ->map(function ($result) {
+                return [
+                    'id' => $result->id,
+                    'test_id' => $result->test_id,
+                    'test_nombre' => $result->test->nombre,
+                    'test_tipo' => $result->test->tipo,
+                    'fecha_realizacion' => $result->fecha_realizacion,
+                    'puntuacion_total' => $result->puntuacion_total,
+                ];
+            });
+
+        // Calcular estadísticas
+        $totalTests = $allTests->count();
+        $completedCount = $completedResults->count();
+        $pendingCount = $totalTests - $completedCount;
+
         $data = [
             'user' => $this->getUserData(),
-            'welcome_message' => 'Bienvenido Estudiante',
-            'pending_tests' => 3,
-            'completed_tests' => 5,
+            'stats' => [
+                'total_tests' => $totalTests,
+                'completed_tests' => $completedCount,
+                'pending_tests' => $pendingCount,
+                'completion_percentage' => $totalTests > 0 ? round(($completedCount / $totalTests) * 100, 1) : 0,
+            ],
+            'completed_results' => $completedResults,
         ];
 
         return Inertia::render('Student/Dashboard', $data);
     }
-
     /**
      * Dashboard para tutores
      */

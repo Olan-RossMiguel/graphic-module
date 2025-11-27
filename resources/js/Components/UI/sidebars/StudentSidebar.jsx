@@ -23,19 +23,19 @@ const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
 
     return (
         <>
-            {/* DESKTOP - Ahora con fixed y height completo desde el navbar hacia abajo */}
+            {/* DESKTOP - Sidebar colapsable */}
             <aside
                 className={[
-                    'fixed bottom-0 left-0 top-16 z-20',
                     'hidden bg-[#0a5cb8] text-white md:flex md:flex-col',
                     collapsed ? 'w-20' : 'w-64',
-                    'overflow-hidden',
+                    'overflow-hidden md:h-screen',
                     'transform will-change-transform',
-                    // Animación suave
-                    collapsed
-                        ? 'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
-                        : 'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
+                    'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
                 ].join(' ')}
+                style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#94a3b8 transparent',
+                }}
             >
                 {/* Botón de colapsar/expandir */}
                 <div
@@ -45,7 +45,7 @@ const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
                     ].join(' ')}
                 >
                     <button
-                        onClick={() => setCollapsed(!collapsed)}
+                        onClick={() => onToggle(!collapsed)}
                         className={[
                             'rounded-md p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30',
                             collapsed ? 'mx-auto' : 'ml-auto',
@@ -60,7 +60,13 @@ const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
                 </div>
 
                 <div className="flex min-h-0 flex-1 flex-col">
-                    <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-2 pt-4">
+                    <nav
+                        className="scrollbar-thin scrollbar-thumb-gray-400 scrollbar-track-transparent hover:scrollbar-thumb-gray-300 min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-2 pt-4"
+                        style={{
+                            scrollbarWidth: 'thin',
+                            scrollbarColor: '#94a3b8 transparent',
+                        }}
+                    >
                         <Link
                             href={route('profile.edit')}
                             className={`flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30 ${
@@ -138,8 +144,8 @@ const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
                             </Link>
                         </div>
 
-                        <a
-                            href="#"
+                        <Link
+                            href={route('about')}
                             className="mt-2 flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                             title="Sobre nosotros"
                         >
@@ -149,7 +155,7 @@ const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
                                     Sobre nosotros
                                 </span>
                             )}
-                        </a>
+                        </Link>
                     </nav>
 
                     {/* Logout SIEMPRE visible en desktop */}
@@ -168,77 +174,70 @@ const StudentSidebar = ({ collapsed = false, onToggle = () => {} }) => {
                 </div>
             </aside>
 
-            {/* MÓVIL: rail de iconos con animación SUAVE (abrir/cerrar) */}
-            <div
-                className={[
-                    'fixed bottom-0 left-0 top-16 z-30 flex w-16 flex-col items-center space-y-6 bg-[#0a5cb8] py-5 text-white md:hidden',
-                    'transform will-change-transform',
-                    // Animación suave
-                    mobileOpen
-                        ? 'translate-x-0 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]'
-                        : '-translate-x-16 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]',
-                    'border-r border-white/20 shadow-lg',
-                ].join(' ')}
-            >
-                {/* Botón para abrir/cerrar el rail */}
-                <button
-                    onClick={() => setMobileOpen(!mobileOpen)}
-                    className="rounded-md p-2 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
-                    aria-label={mobileOpen ? 'Ocultar menú' : 'Mostrar menú'}
-                    title={mobileOpen ? 'Ocultar' : 'Mostrar'}
+            {/* MÓVIL: rail de iconos fijo (sin botón de contraer, siempre visible) */}
+            <div className="fixed inset-y-0 left-0 z-30 flex w-16 flex-col items-center overflow-hidden border-r border-white/20 bg-[#0a5cb8] pt-16 text-white shadow-lg md:hidden">
+                {/* Contenedor scrolleable con los iconos - sin scroll horizontal */}
+                <div
+                    className="flex flex-1 flex-col items-center space-y-6 overflow-y-auto overflow-x-hidden py-5"
+                    style={{
+                        scrollbarWidth: 'thin',
+                        scrollbarColor: '#94a3b8 transparent',
+                    }}
                 >
-                    {mobileOpen ? (
-                        <FaChevronLeft className="h-5 w-5" />
-                    ) : (
-                        <FaChevronRight className="h-5 w-5" />
-                    )}
-                </button>
+                    <Link
+                        href={route('profile.edit')}
+                        className="p-3"
+                        title="Mi perfil"
+                    >
+                        <FaUser className="h-6 w-6" />
+                    </Link>
+                    <Link
+                        href={route('tests.assistance.show')}
+                        className="p-3"
+                        title="Asistencia psicológica"
+                    >
+                        <RiMentalHealthFill className="h-6 w-6" />
+                    </Link>
+                    <Link
+                        href={route('tests.learning-styles.show')}
+                        className="p-3"
+                        title="Estilos de aprendizaje"
+                    >
+                        <FaBook className="h-6 w-6" />
+                    </Link>
+                    <Link
+                        href={route('tests.emotional-intelligence.show')}
+                        className="p-3"
+                        title="Inteligencia emocional"
+                    >
+                        <FaBrain className="h-6 w-6" />
+                    </Link>
+                    <Link
+                        href={route('tests.soft-skills.show')}
+                        className="p-3"
+                        title="Habilidades blandas"
+                    >
+                        <FaHandsHelping className="h-6 w-6" />
+                    </Link>
+                    <Link
+                        href={route('about')}
+                        className="p-3"
+                        title="Sobre nosotros"
+                    >
+                        <FaInfoCircle className="h-6 w-6" />
+                    </Link>
+                </div>
 
-                <a
-                    href={route('profile.edit')}
-                    className="p-3"
-                    title="Mi perfil"
-                >
-                    <FaUser className="h-6 w-6" />
-                </a>
-                <a
-                    href={route('tests.assistance.show')}
-                    className="p-3"
-                    title="Asistencia psicológica"
-                >
-                    <RiMentalHealthFill className="h-6 w-6" />
-                </a>
-                <a
-                    href={route('tests.learning-styles.show')}
-                    className="p-3"
-                    title="Estilos de aprendizaje"
-                >
-                    <FaBook className="h-6 w-6" />
-                </a>
-                <a
-                    href={route('tests.emotional-intelligence.show')}
-                    className="p-3"
-                    title="Inteligencia emocional"
-                >
-                    <FaBrain className="h-6 w-6" />
-                </a>
-                <a
-                    href={route('tests.soft-skills.show')}
-                    className="p-3"
-                    title="Habilidades blandas"
-                >
-                    <FaHandsHelping className="h-6 w-6" />
-                </a>
-                <a href="#" className="p-3" title="Sobre nosotros">
-                    <FaInfoCircle className="h-6 w-6" />
-                </a>
-                <button
-                    onClick={() => router.post(route('logout'))}
-                    className="mt-auto p-3"
-                    title="Cerrar sesión"
-                >
-                    <FaSignOutAlt className="h-6 w-6" />
-                </button>
+                {/* Logout fijo abajo */}
+                <div className="flex-shrink-0 border-t border-white/20 py-3">
+                    <button
+                        onClick={() => router.post(route('logout'))}
+                        className="rounded-md p-3 hover:bg-white/10"
+                        title="Cerrar sesión"
+                    >
+                        <FaSignOutAlt className="h-6 w-6" />
+                    </button>
+                </div>
             </div>
         </>
     );

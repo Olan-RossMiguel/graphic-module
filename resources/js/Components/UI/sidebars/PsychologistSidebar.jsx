@@ -99,7 +99,7 @@ const PsychologistSidebar = () => {
 
                         {/* Sobre nosotros */}
                         <Link
-                            href="/about"
+                            href={route('about')}
                             className="flex items-center rounded-md px-4 py-3 hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/30"
                             preserveScroll
                             title="Sobre nosotros"

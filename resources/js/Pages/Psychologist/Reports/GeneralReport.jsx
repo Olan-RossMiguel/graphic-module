@@ -29,7 +29,7 @@ export default function GeneralReport({ auth, student, testResults }) {
                     <div className="min-w-0 flex-1">
                         <div className="flex items-center">
                             <Link
-                                href={route('psychologist.dashboard')}
+                                href={route('psychologist.groups.index')}
                                 className="mr-4 text-gray-400 transition-colors hover:text-gray-600"
                             >
                                 <FaArrowLeft className="h-5 w-5" />

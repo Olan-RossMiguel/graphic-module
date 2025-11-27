@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AboutController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\DashboardController;
@@ -154,6 +155,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/students/{student}/report/general', [PsychologistReportController::class, 'showGeneralReport'])
         ->name('students.report.general');
     });
+
+     Route::get('/sobre-nosotros', [AboutController::class, 'index'])->name('about');
 });
 
 // ==========================================
