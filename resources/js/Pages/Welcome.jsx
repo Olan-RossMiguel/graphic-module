@@ -1,3 +1,4 @@
+import { Link } from '@inertiajs/react';
 import {
     FaBrain,
     FaChalkboardTeacher,
@@ -107,7 +108,7 @@ export default function LandingPage() {
 
                                     {/* Button */}
                                     {role.route ? (
-                                        <a
+                                        <Link
                                             href={role.route}
                                             style={{
                                                 backgroundColor: '#0a5cb8',
@@ -115,7 +116,7 @@ export default function LandingPage() {
                                             className="block w-full rounded-lg py-3 text-center font-semibold text-white transition-opacity hover:opacity-90 sm:py-3.5"
                                         >
                                             Iniciar Sesión
-                                        </a>
+                                        </Link>
                                     ) : (
                                         <button
                                             disabled
