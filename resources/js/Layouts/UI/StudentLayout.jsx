@@ -10,6 +10,7 @@ const StudentLayout = ({ user, children }) => {
             <Navbar user={user} />
             <div className="flex h-screen bg-gray-100">
                 <StudentSidebar
+                    user={user}
                     collapsed={sidebarCollapsed}
                     onToggle={setSidebarCollapsed}
                 />

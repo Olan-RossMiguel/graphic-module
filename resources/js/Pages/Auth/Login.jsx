@@ -6,7 +6,7 @@ import GuestLayoutLogIn from '@/Layouts/GuestLayoutLogIn';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { FaArrowRight, FaLock, FaUser, FaUserPlus } from 'react-icons/fa';
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         identifier: '',
         password: '',
@@ -99,15 +99,6 @@ export default function Login({ status, canResetPassword }) {
                             Mantener sesión activa
                         </span>
                     </label>
-
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="text-sm text-blue-600 transition-colors hover:text-blue-500"
-                        >
-                            ¿Contraseña olvidada?
-                        </Link>
-                    )}
                 </div>
 
                 {/* Botón de login */}
@@ -161,10 +152,7 @@ export default function Login({ status, canResetPassword }) {
                     <li>
                         • Estudiantes: Contacta a tu tutor para obtener acceso
                     </li>
-                    <li>
-                        • Tutores: Solicita tu cuenta al administrador del
-                        sistema
-                    </li>
+
                     <li>
                         • ¿Problemas con el acceso? Contacta al soporte técnico
                     </li>
