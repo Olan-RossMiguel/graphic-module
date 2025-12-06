@@ -1,7 +1,8 @@
 <?php
 
 namespace App\Providers;
-
+use App\Models\StudentDismissal;
+use App\Observers\StudentDismissalObserver;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        StudentDismissal::observe(StudentDismissalObserver::class);
         Vite::prefetch(concurrency: 3);
     }
 }

@@ -2,13 +2,17 @@
 
 namespace App\Models;
 
+use Filament\Models\Contracts\HasName;
+use Filament\Models\Contracts\FilamentUser; // ← Agregar este import
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Auth;
+use Filament\Panel;
 
-class User extends Authenticatable
+class User extends Authenticatable implements HasName, FilamentUser // ← Implementar FilamentUser
 {
     use HasFactory, Notifiable;
 
@@ -27,6 +31,8 @@ class User extends Authenticatable
         'nivel_academico',
         'estado',
         'foto_perfil',
+        'fecha_baja',
+        'motivo_baja',
     ];
 
     protected $hidden = [
@@ -38,25 +44,48 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
-            'semestre'          => 'integer',
-            'group_id'          => 'integer',
+            'fecha_baja' => 'datetime',
+            'password' => 'hashed',
+            'semestre' => 'integer',
+            'group_id' => 'integer',
         ];
     }
 
-    // Grupo del estudiante
+    // ====== MÉTODOS DE FILAMENT ======
+    
+    public function getFilamentName(): string
+    {
+        $nombreCompleto = trim("{$this->nombre} {$this->apellido_paterno} {$this->apellido_materno}");
+
+        if (!empty($nombreCompleto)) {
+            return $nombreCompleto;
+        }
+
+        return $this->email ?? 'Usuario';
+    }
+
+    // ← ESTE ES EL MÉTODO IMPORTANTE PARA CONTROL DE ACCESO
+    public function canAccessPanel(Panel $panel): bool
+    {
+        // Solo admin puede acceder
+        return $this->tipo === 'admin';
+        
+        // O si quieres que admin, tutor y psicóloga accedan:
+        // return in_array($this->tipo, ['admin', 'tutor', 'psicologa']);
+    }
+
+    // ====== RELACIONES ======
+    
     public function group()
     {
         return $this->belongsTo(Group::class);
     }
 
-    // NUEVA: Relación directa con tutor_groups (con semestre)
     public function tutorGroups()
     {
         return $this->hasMany(TutorGroup::class);
     }
 
-    // ACTUALIZADA: Grupos asignados (con semestre)
     public function assignedGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
@@ -64,25 +93,22 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
-    // CORREGIDA: Grupos donde es tutor (con semestre)
     public function assignedTutorGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
-            ->where('tutor_groups.user_id', $this->id) // Filtro correcto
+            ->where('tutor_groups.user_id', $this->id)
             ->withPivot('semestre')
             ->withTimestamps();
     }
 
-    // CORREGIDA: Grupos donde es psicóloga (con semestre)
     public function assignedPsychologistGroups()
     {
         return $this->belongsToMany(Group::class, 'tutor_groups', 'user_id', 'group_id')
-            ->where('tutor_groups.user_id', $this->id) // Filtro correcto
+            ->where('tutor_groups.user_id', $this->id)
             ->withPivot('semestre')
             ->withTimestamps();
     }
 
-    // NUEVO: Método mejorado para obtener grupos del tutor
     public function tutorGroupsWithSemestre()
     {
         return $this->hasMany(TutorGroup::class)
@@ -92,7 +118,6 @@ class User extends Authenticatable
             });
     }
 
-    // NUEVO: Método simple para grupos del tutor actual
     public function getMyTutorGroups()
     {
         return TutorGroup::where('user_id', $this->id)
@@ -100,31 +125,45 @@ class User extends Authenticatable
             ->get();
     }
 
-    // Helpers de rol
+    // ====== HELPERS DE ROL ======
+    
     public function isEstudiante()
     {
         return $this->tipo === 'estudiante';
     }
+
     public function isTutor()
     {
         return $this->tipo === 'tutor';
     }
+
     public function isPsicologa()
     {
         return $this->tipo === 'psicologa';
     }
+
     public function isAdmin()
     {
         return $this->tipo === 'admin';
     }
 
-    // NUEVO: Tutor asignado al estudiante (por group_id y semestre)
-    // Líneas 104-113
+    public function dismissals()
+    {
+        return $this->hasMany(StudentDismissal::class, 'estudiante_id');
+    }
+
+    public function dismissalsAsPsychologist()
+    {
+        return $this->hasMany(StudentDismissal::class, 'psicologa_id');
+    }
+
+    // ====== ATRIBUTOS Y MÉTODOS DE NEGOCIO ======
+    
     public function getTutorAttribute()
     {
         if (!$this->isEstudiante() || !$this->group_id || !$this->semestre) return null;
 
-        return User::where('tipo', 'tutor') // ← AGREGADO
+        return User::where('tipo', 'tutor')
             ->whereHas('tutorGroups', function ($q) {
                 $q->where('group_id', $this->group_id)
                     ->where('semestre', $this->semestre);
@@ -133,7 +172,6 @@ class User extends Authenticatable
             ->first();
     }
 
-    // NUEVO: Psicóloga asignada al grupo del estudiante
     public function getPsychologistAttribute()
     {
         if (!$this->isEstudiante() || !$this->group_id || !$this->semestre) return null;
@@ -145,7 +183,6 @@ class User extends Authenticatable
         })->first();
     }
 
-    // ACTUALIZADA: Estudiantes de los grupos del tutor (por semestre)
     public function getEstudiantesBySemestre($semestre = null)
     {
         if (!$this->isTutor()) return collect();
@@ -164,7 +201,6 @@ class User extends Authenticatable
             ->get();
     }
 
-    // NUEVO: Todos los estudiantes para psicólogas (todos los grupos y semestres)
     public function getAllEstudiantesForPsychologist()
     {
         if (!$this->isPsicologa()) return collect();
@@ -172,7 +208,6 @@ class User extends Authenticatable
         return User::where('tipo', 'estudiante')->get();
     }
 
-    // NUEVO: Grupos por semestre para tutores
     public function getGroupsBySemestre($semestre)
     {
         if (!$this->isTutor()) return collect();
@@ -184,7 +219,6 @@ class User extends Authenticatable
             ->pluck('group');
     }
 
-    // NUEVO: Todos los grupos para psicólogas
     public function getAllGroupsForPsychologist()
     {
         if (!$this->isPsicologa()) return collect();
@@ -192,7 +226,6 @@ class User extends Authenticatable
         return Group::with(['students', 'tutorGroups.user'])->get();
     }
 
-    // URL pública de la foto
     public function getFotoPerfilUrlAttribute()
     {
         if (!$this->foto_perfil) return '/images/default-avatar.png';
@@ -202,5 +235,16 @@ class User extends Authenticatable
     public function getNombreCompletoAttribute()
     {
         return trim("{$this->nombre} {$this->apellido_paterno} {$this->apellido_materno}");
+    }
+
+    public function darDeBaja(string $motivo, string $fechaBaja, ?string $fechaReingreso = null, ?int $psicologaId = null): StudentDismissal
+    {
+        return StudentDismissal::create([
+            'estudiante_id' => $this->id,
+            'psicologa_id' => $psicologaId ?? auth()->user()?->id,
+            'motivo' => $motivo,
+            'fecha_baja' => $fechaBaja,
+            'fecha_reingreso' => $fechaReingreso,
+        ]);
     }
 }

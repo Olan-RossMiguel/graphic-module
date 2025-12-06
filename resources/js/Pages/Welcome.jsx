@@ -13,24 +13,28 @@ export default function LandingPage() {
             subtitle: 'Módulo de Tests y Servicios Psicológicos',
             icon: FaUserGraduate,
             route: '/login',
+            isAdmin: false,
         },
         {
             title: 'Tutor',
             subtitle: 'Módulo de Seguimiento y Orientación',
             icon: FaChalkboardTeacher,
             route: '/login',
+            isAdmin: false,
         },
         {
             title: 'Psicólogo/a',
             subtitle: 'Módulo de Evaluación y Apoyo',
             icon: FaBrain,
             route: '/login',
+            isAdmin: false,
         },
         {
             title: 'Administrador',
             subtitle: 'Módulo de Gestión y Configuración',
             icon: FaUserShield,
             route: '/admin',
+            isAdmin: true,
         },
     ];
 
@@ -108,15 +112,29 @@ export default function LandingPage() {
 
                                     {/* Button */}
                                     {role.route ? (
-                                        <Link
-                                            href={role.route}
-                                            style={{
-                                                backgroundColor: '#0a5cb8',
-                                            }}
-                                            className="block w-full rounded-lg py-3 text-center font-semibold text-white transition-opacity hover:opacity-90 sm:py-3.5"
-                                        >
-                                            Iniciar Sesión
-                                        </Link>
+                                        role.isAdmin ? (
+                                            // Enlace HTML nativo para Admin (navegación completa)
+                                            <a
+                                                href={role.route}
+                                                style={{
+                                                    backgroundColor: '#0a5cb8',
+                                                }}
+                                                className="block w-full rounded-lg py-3 text-center font-semibold text-white transition-opacity hover:opacity-90 sm:py-3.5"
+                                            >
+                                                Iniciar Sesión
+                                            </a>
+                                        ) : (
+                                            // Link de Inertia para otros roles
+                                            <Link
+                                                href={role.route}
+                                                style={{
+                                                    backgroundColor: '#0a5cb8',
+                                                }}
+                                                className="block w-full rounded-lg py-3 text-center font-semibold text-white transition-opacity hover:opacity-90 sm:py-3.5"
+                                            >
+                                                Iniciar Sesión
+                                            </Link>
+                                        )
                                     ) : (
                                         <button
                                             disabled
